@@ -37,6 +37,7 @@ use FireflyIII\Repositories\ObjectGroup\CreatesObjectGroups;
 use FireflyIII\Services\Internal\Destroy\BillDestroyService;
 use FireflyIII\Services\Internal\Update\BillUpdateService;
 use FireflyIII\Support\CacheProperties;
+use FireflyIII\Support\Facades\Amount;
 use FireflyIII\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Query\JoinClause;
@@ -57,7 +58,7 @@ class BillRepository implements BillRepositoryInterface
     {
         $search = $this->user->bills();
         if ('' !== $query) {
-            $search->where('name', 'LIKE', sprintf('%%%s', $query));
+            $search->whereLike('name', sprintf('%%%s', $query));
         }
         $search->orderBy('name', 'ASC')
             ->where('active', true)
@@ -70,7 +71,7 @@ class BillRepository implements BillRepositoryInterface
     {
         $search = $this->user->bills();
         if ('' !== $query) {
-            $search->where('name', 'LIKE', sprintf('%s%%', $query));
+            $search->whereLike('name', sprintf('%s%%', $query));
         }
         $search->orderBy('name', 'ASC')
             ->where('active', true)
@@ -240,7 +241,7 @@ class BillRepository implements BillRepositoryInterface
         /** @var null|Note $note */
         $note = $bill->notes()->first();
 
-        return (string)$note?->text;
+        return (string) $note?->text;
     }
 
     public function getOverallAverage(Bill $bill): array
@@ -256,19 +257,25 @@ class BillRepository implements BillRepositoryInterface
         /** @var TransactionJournal $journal */
         foreach ($journals as $journal) {
             /** @var Transaction $transaction */
-            $transaction                = $journal->transactions()->where('amount', '<', 0)->first();
-            $currencyId                 = (int)$journal->transaction_currency_id;
-            $currency                   = $journal->transactionCurrency;
+            $transaction                       = $journal->transactions()->where('amount', '<', 0)->first();
+            $currencyId                        = (int) $journal->transaction_currency_id;
+            $currency                          = $journal->transactionCurrency;
             $result[$currencyId] ??= [
                 'sum'                     => '0',
+                'native_sum'              => '0',
                 'count'                   => 0,
                 'avg'                     => '0',
+                'native_avg'              => '0',
                 'currency_id'             => $currency->id,
                 'currency_code'           => $currency->code,
                 'currency_symbol'         => $currency->symbol,
                 'currency_decimal_places' => $currency->decimal_places,
             ];
-            $result[$currencyId]['sum'] = bcadd($result[$currencyId]['sum'], $transaction->amount);
+            $result[$currencyId]['sum']        = bcadd($result[$currencyId]['sum'], $transaction->amount);
+            $result[$currencyId]['native_sum'] = bcadd($result[$currencyId]['native_sum'], $transaction->native_amount ?? '0');
+            if ($journal->foreign_currency_id === Amount::getDefaultCurrency()->id) {
+                $result[$currencyId]['native_sum'] = bcadd($result[$currencyId]['native_sum'], $transaction->amount);
+            }
             ++$result[$currencyId]['count'];
         }
 
@@ -278,7 +285,8 @@ class BillRepository implements BillRepositoryInterface
          * @var array $arr
          */
         foreach ($result as $currencyId => $arr) {
-            $result[$currencyId]['avg'] = bcdiv($arr['sum'], (string)$arr['count']);
+            $result[$currencyId]['avg']        = bcdiv($arr['sum'], (string) $arr['count']);
+            $result[$currencyId]['native_avg'] = bcdiv($arr['native_sum'], (string) $arr['count']);
         }
 
         return $result;
@@ -305,6 +313,8 @@ class BillRepository implements BillRepositoryInterface
     public function getPaidDatesInRange(Bill $bill, Carbon $start, Carbon $end): Collection
     {
         // app('log')->debug('Now in getPaidDatesInRange()');
+
+        Log::debug(sprintf('Search for linked journals between %s and %s', $start->toW3cString(), $end->toW3cString()));
 
         return $bill->transactionJournals()
             ->before($end)->after($start)->get(
@@ -376,14 +386,15 @@ class BillRepository implements BillRepositoryInterface
         /** @var TransactionJournal $journal */
         foreach ($journals as $journal) {
             /** @var null|Transaction $transaction */
-            $transaction                = $journal->transactions()->where('amount', '<', 0)->first();
+            $transaction                       = $journal->transactions()->where('amount', '<', 0)->first();
             if (null === $transaction) {
                 continue;
             }
-            $currencyId                 = (int)$journal->transaction_currency_id;
-            $currency                   = $journal->transactionCurrency;
+            $currencyId                        = (int) $journal->transaction_currency_id;
+            $currency                          = $journal->transactionCurrency;
             $result[$currencyId] ??= [
                 'sum'                     => '0',
+                'native_sum'              => '0',
                 'count'                   => 0,
                 'avg'                     => '0',
                 'currency_id'             => $currency->id,
@@ -391,7 +402,11 @@ class BillRepository implements BillRepositoryInterface
                 'currency_symbol'         => $currency->symbol,
                 'currency_decimal_places' => $currency->decimal_places,
             ];
-            $result[$currencyId]['sum'] = bcadd($result[$currencyId]['sum'], $transaction->amount);
+            $result[$currencyId]['sum']        = bcadd($result[$currencyId]['sum'], $transaction->amount);
+            $result[$currencyId]['native_sum'] = bcadd($result[$currencyId]['native_sum'], $transaction->native_amount ?? '0');
+            if ($journal->foreign_currency_id === Amount::getDefaultCurrency()->id) {
+                $result[$currencyId]['native_sum'] = bcadd($result[$currencyId]['native_sum'], $transaction->amount);
+            }
             ++$result[$currencyId]['count'];
         }
 
@@ -401,7 +416,8 @@ class BillRepository implements BillRepositoryInterface
          * @var array $arr
          */
         foreach ($result as $currencyId => $arr) {
-            $result[$currencyId]['avg'] = bcdiv($arr['sum'], (string)$arr['count']);
+            $result[$currencyId]['avg']        = bcdiv($arr['sum'], (string) $arr['count']);
+            $result[$currencyId]['native_avg'] = bcdiv($arr['native_sum'], (string) $arr['count']);
         }
 
         return $result;
@@ -414,7 +430,7 @@ class BillRepository implements BillRepositoryInterface
     {
         /** @var Transaction $transaction */
         foreach ($transactions as $transaction) {
-            $journal          = $bill->user->transactionJournals()->find((int)$transaction['transaction_journal_id']);
+            $journal          = $bill->user->transactionJournals()->find((int) $transaction['transaction_journal_id']);
             $journal->bill_id = $bill->id;
             $journal->save();
             app('log')->debug(sprintf('Linked journal #%d to bill #%d', $journal->id, $bill->id));
@@ -435,15 +451,17 @@ class BillRepository implements BillRepositoryInterface
         }
         // find the most recent date for this bill NOT in the future. Cache this date:
         $start        = clone $bill->date;
+        $start->startOfDay();
         app('log')->debug('nextExpectedMatch: Start is '.$start->format('Y-m-d'));
 
         while ($start < $date) {
-            app('log')->debug(sprintf('$start (%s) < $date (%s)', $start->format('Y-m-d'), $date->format('Y-m-d')));
+            app('log')->debug(sprintf('$start (%s) < $date (%s)', $start->format('Y-m-d H:i:s'), $date->format('Y-m-d H:i:s')));
             $start = app('navigation')->addPeriod($start, $bill->repeat_freq, $bill->skip);
-            app('log')->debug('Start is now '.$start->format('Y-m-d'));
+            app('log')->debug('Start is now '.$start->format('Y-m-d H:i:s'));
         }
 
         $end          = app('navigation')->addPeriod($start, $bill->repeat_freq, $bill->skip);
+        $end->endOfDay();
 
         // see if the bill was paid in this period.
         $journalCount = $bill->transactionJournals()->before($end)->after($start)->count();
@@ -485,7 +503,7 @@ class BillRepository implements BillRepositoryInterface
     {
         $query = sprintf('%%%s%%', $query);
 
-        return $this->user->bills()->where('name', 'LIKE', $query)->take($limit)->get();
+        return $this->user->bills()->whereLike('name', $query)->take($limit)->get();
     }
 
     public function setObjectGroup(Bill $bill, string $objectGroupTitle): Bill
@@ -506,37 +524,35 @@ class BillRepository implements BillRepositoryInterface
 
     public function sumPaidInRange(Carbon $start, Carbon $end): array
     {
-        $bills  = $this->getActiveBills();
-        $return = [];
+        Log::debug(sprintf('sumPaidInRange from %s to %s', $start->toW3cString(), $end->toW3cString()));
+        $bills           = $this->getActiveBills();
+        $return          = [];
+        $convertToNative = Amount::convertToNative($this->user);
+        $default         = app('amount')->getDefaultCurrency();
 
         /** @var Bill $bill */
         foreach ($bills as $bill) {
-            /** @var Collection $set */
-            $set      = $bill->transactionJournals()->after($start)->before($end)->get(['transaction_journals.*']);
-            $currency = $bill->transactionCurrency;
 
-            $return[$currency->id] ??= [
-                'id'             => (string)$currency->id,
+            /** @var Collection $set */
+            $set                          = $bill->transactionJournals()->after($start)->before($end)->get(['transaction_journals.*']);
+            $currency                     = $convertToNative && $bill->transactionCurrency->id !== $default->id ? $default : $bill->transactionCurrency;
+            $return[(int) $currency->id] ??= [
+                'id'             => (string) $currency->id,
                 'name'           => $currency->name,
                 'symbol'         => $currency->symbol,
                 'code'           => $currency->code,
                 'decimal_places' => $currency->decimal_places,
                 'sum'            => '0',
             ];
+            $setAmount                    = '0';
 
             /** @var TransactionJournal $transactionJournal */
             foreach ($set as $transactionJournal) {
-                /** @var null|Transaction $sourceTransaction */
-                $sourceTransaction = $transactionJournal->transactions()->where('amount', '<', 0)->first();
-                if (null !== $sourceTransaction) {
-                    $amount                       = $sourceTransaction->amount;
-                    if ((int)$sourceTransaction->foreign_currency_id === $currency->id) {
-                        // use foreign amount instead!
-                        $amount = (string)$sourceTransaction->foreign_amount;
-                    }
-                    $return[$currency->id]['sum'] = bcadd($return[$currency->id]['sum'], $amount);
-                }
+                $setAmount = bcadd($setAmount, Amount::getAmountFromJournalObject($transactionJournal));
             }
+            Log::debug(sprintf('Bill #%d ("%s") with %d transaction(s) and sum %s %s', $bill->id, $bill->name, $set->count(), $currency->code, $setAmount));
+            $return[$currency->id]['sum'] = bcadd($return[$currency->id]['sum'], $setAmount);
+            Log::debug(sprintf('Total sum is now %s', $return[$currency->id]['sum']));
         }
 
         return $return;
@@ -554,30 +570,37 @@ class BillRepository implements BillRepositoryInterface
     public function sumUnpaidInRange(Carbon $start, Carbon $end): array
     {
         app('log')->debug(sprintf('Now in sumUnpaidInRange("%s", "%s")', $start->format('Y-m-d'), $end->format('Y-m-d')));
-        $bills  = $this->getActiveBills();
-        $return = [];
+        $bills           = $this->getActiveBills();
+        $return          = [];
+        $convertToNative = Amount::convertToNative($this->user);
+        $default         = app('amount')->getDefaultCurrency();
 
         /** @var Bill $bill */
         foreach ($bills as $bill) {
             //            app('log')->debug(sprintf('Processing bill #%d ("%s")', $bill->id, $bill->name));
-            $dates = $this->getPayDatesInRange($bill, $start, $end);
-            $count = $bill->transactionJournals()->after($start)->before($end)->count();
-            $total = $dates->count() - $count;
+            $dates    = $this->getPayDatesInRange($bill, $start, $end);
+            $count    = $bill->transactionJournals()->after($start)->before($end)->count();
+            $total    = $dates->count() - $count;
             // app('log')->debug(sprintf('Pay dates: %d, count: %d, left: %d', $dates->count(), $count, $total));
             // app('log')->debug('dates', $dates->toArray());
 
+            $minField = $convertToNative && $bill->transactionCurrency->id !== $default->id ? 'native_amount_min' : 'amount_min';
+            $maxField = $convertToNative && $bill->transactionCurrency->id !== $default->id ? 'native_amount_max' : 'amount_max';
+            Log::debug(sprintf('min field is %s, max field is %s', $minField, $maxField));
+
             if ($total > 0) {
-                $currency                     = $bill->transactionCurrency;
-                $average                      = bcdiv(bcadd($bill->amount_max, $bill->amount_min), '2');
+                $currency                     = $convertToNative && $bill->transactionCurrency->id !== $default->id ? $default : $bill->transactionCurrency;
+                $average                      = bcdiv(bcadd($bill->{$maxField} ?? '0', $bill->{$minField} ?? '0'), '2');
+                Log::debug(sprintf('Amount to pay is %s %s (%d times)', $currency->code, $average, $total));
                 $return[$currency->id] ??= [
-                    'id'             => (string)$currency->id,
+                    'id'             => (string) $currency->id,
                     'name'           => $currency->name,
                     'symbol'         => $currency->symbol,
                     'code'           => $currency->code,
                     'decimal_places' => $currency->decimal_places,
                     'sum'            => '0',
                 ];
-                $return[$currency->id]['sum'] = bcadd($return[$currency->id]['sum'], bcmul($average, (string)$total));
+                $return[$currency->id]['sum'] = bcadd($return[$currency->id]['sum'], bcmul($average, (string) $total));
             }
         }
 

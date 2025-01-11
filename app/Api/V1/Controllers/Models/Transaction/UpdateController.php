@@ -1,4 +1,5 @@
 <?php
+
 /*
  * UpdateController.php
  * Copyright (c) 2021 james@firefly-iii.org
@@ -69,7 +70,7 @@ class UpdateController extends Controller
      */
     public function update(UpdateRequest $request, TransactionGroup $transactionGroup): JsonResponse
     {
-        app('log')->debug('Now in update routine for transaction group!');
+        app('log')->debug('Now in update routine for transaction group');
         $data             = $request->getAll();
 
         // Fixes 8750.

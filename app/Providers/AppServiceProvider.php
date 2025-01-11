@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 
 /**
  * Class AppServiceProvider
@@ -44,7 +45,7 @@ class AppServiceProvider extends ServiceProvider
             $headers = [
                 'Cache-Control' => 'no-store',
             ];
-            $uuid    = (string)request()->header('X-Trace-Id');
+            $uuid    = (string) request()->header('X-Trace-Id');
             if ('' !== trim($uuid) && (1 === preg_match('/^[a-f\d]{8}(-[a-f\d]{4}){4}[a-f\d]{8}$/i', trim($uuid)))) {
                 $headers['X-Trace-Id'] = $uuid;
             }
@@ -87,6 +88,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        Passport::ignoreRoutes();
         //        Passport::ignoreMigrations();
         //        Sanctum::ignoreMigrations();
     }

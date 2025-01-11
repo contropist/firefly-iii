@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionTypeController.php
  * Copyright (c) 2020 james@firefly-iii.org
@@ -65,7 +66,7 @@ class TransactionTypeController extends Controller
         foreach ($types as $type) {
             // different key for consistency.
             $array[] = [
-                'id'   => (string)$type->id,
+                'id'   => (string) $type->id,
                 'name' => $type->type,
                 'type' => $type->type,
             ];

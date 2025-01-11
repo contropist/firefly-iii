@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TagController.php
  * Copyright (c) 2020 james@firefly-iii.org
@@ -68,7 +69,7 @@ class TagController extends Controller
         /** @var Tag $tag */
         foreach ($result as $tag) {
             $array[] = [
-                'id'   => (string)$tag->id,
+                'id'   => (string) $tag->id,
                 'name' => $tag->tag,
                 'tag'  => $tag->tag,
             ];

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BudgetLimitUpdateRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -50,7 +51,12 @@ class UpdateRequest extends FormRequest
             'amount'        => ['amount', 'convertString'],
             'currency_id'   => ['currency_id', 'convertInteger'],
             'currency_code' => ['currency_code', 'convertString'],
+            'notes'         => ['notes', 'stringWithNewlines'],
         ];
+        if (false === $this->has('notes')) {
+            // ignore notes, not submitted.
+            unset($fields['notes']);
+        }
 
         return $this->getAllData($fields);
     }
@@ -66,6 +72,7 @@ class UpdateRequest extends FormRequest
             'amount'        => ['nullable', new IsValidPositiveAmount()],
             'currency_id'   => 'numeric|exists:transaction_currencies,id',
             'currency_code' => 'min:3|max:51|exists:transaction_currencies,code',
+            'notes'         => 'nullable|min:0|max:32768',
         ];
     }
 
@@ -83,7 +90,7 @@ class UpdateRequest extends FormRequest
                     $start = new Carbon($data['start']);
                     $end   = new Carbon($data['end']);
                     if ($end->isBefore($start)) {
-                        $validator->errors()->add('end', (string)trans('validation.date_after'));
+                        $validator->errors()->add('end', (string) trans('validation.date_after'));
                     }
                 }
             }

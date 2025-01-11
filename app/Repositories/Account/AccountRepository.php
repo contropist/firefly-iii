@@ -37,6 +37,7 @@ use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Models\TransactionType;
 use FireflyIII\Services\Internal\Destroy\AccountDestroyService;
 use FireflyIII\Services\Internal\Update\AccountUpdateService;
+use FireflyIII\Support\Facades\Steam;
 use FireflyIII\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -123,6 +124,7 @@ class AccountRepository implements AccountRepositoryInterface
 
     public function findByIbanNull(string $iban, array $types): ?Account
     {
+        $iban  = Steam::filterSpaces($iban);
         $query = $this->user->accounts()->where('iban', '!=', '')->whereNotNull('iban');
 
         if (0 !== count($types)) {
@@ -389,7 +391,7 @@ class AccountRepository implements AccountRepositoryInterface
         if (!in_array($type, $list, true)) {
             return null;
         }
-        $currencyId = (int)$this->getMetaValue($account, 'currency_id');
+        $currencyId = (int) $this->getMetaValue($account, 'currency_id');
         if ($currencyId > 0) {
             return TransactionCurrency::find($currencyId);
         }
@@ -411,7 +413,7 @@ class AccountRepository implements AccountRepositoryInterface
             return null;
         }
         if (1 === $result->count()) {
-            return (string)$result->first()->data;
+            return (string) $result->first()->data;
         }
 
         return null;
@@ -429,11 +431,10 @@ class AccountRepository implements AccountRepositoryInterface
 
     public function getUsedCurrencies(Account $account): Collection
     {
-        $info        = $account->transactions()->get(['transaction_currency_id', 'foreign_currency_id'])->toArray();
+        $info        = $account->transactions()->distinct()->groupBy('transaction_currency_id')->get(['transaction_currency_id'])->toArray();
         $currencyIds = [];
         foreach ($info as $entry) {
-            $currencyIds[] = (int)$entry['transaction_currency_id'];
-            $currencyIds[] = (int)$entry['foreign_currency_id'];
+            $currencyIds[] = (int) $entry['transaction_currency_id'];
         }
         $currencyIds = array_unique($currencyIds);
 
@@ -456,14 +457,14 @@ class AccountRepository implements AccountRepositoryInterface
             AccountType::MORTGAGE => [AccountType::LOAN, AccountType::DEBT, AccountType::CREDITCARD, AccountType::MORTGAGE],
         ];
         if (array_key_exists(ucfirst($type), $sets)) {
-            $order = (int)$this->getAccountsByType($sets[ucfirst($type)])->max('order');
+            $order = (int) $this->getAccountsByType($sets[ucfirst($type)])->max('order');
             app('log')->debug(sprintf('Return max order of "%s" set: %d', $type, $order));
 
             return $order;
         }
         $specials = [AccountType::CASH, AccountType::INITIAL_BALANCE, AccountType::IMPORT, AccountType::RECONCILIATION];
 
-        $order    = (int)$this->getAccountsByType($specials)->max('order');
+        $order    = (int) $this->getAccountsByType($specials)->max('order');
         app('log')->debug(sprintf('Return max order of "%s" set (specials!): %d', $type, $order));
 
         return $order;
@@ -544,7 +545,7 @@ class AccountRepository implements AccountRepositoryInterface
 
                     continue;
                 }
-                if ($index !== (int)$account->order) {
+                if ($index !== (int) $account->order) {
                     app('log')->debug(sprintf('Account #%d ("%s"): order should %d be but is %d.', $account->id, $account->name, $index, $account->order));
                     $account->order = $index;
                     $account->save();
@@ -552,6 +553,23 @@ class AccountRepository implements AccountRepositoryInterface
                 ++$index;
             }
         }
+        // reset the rest to zero.
+        $all  = [AccountType::DEFAULT, AccountType::ASSET, AccountType::LOAN, AccountType::DEBT, AccountType::CREDITCARD, AccountType::MORTGAGE];
+        $this->user->accounts()->leftJoin('account_types', 'account_types.id', '=', 'accounts.account_type_id')
+            ->whereNotIn('account_types.type', $all)
+            ->update(['order' => 0])
+        ;
+    }
+
+    /**
+     * @throws FireflyException
+     */
+    public function update(Account $account, array $data): Account
+    {
+        /** @var AccountUpdateService $service */
+        $service = app(AccountUpdateService::class);
+
+        return $service->update($account, $data);
     }
 
     public function searchAccount(string $query, array $types, int $limit): Collection
@@ -568,7 +586,7 @@ class AccountRepository implements AccountRepositoryInterface
             $parts = explode(' ', $query);
             foreach ($parts as $part) {
                 $search = sprintf('%%%s%%', $part);
-                $dbQuery->where('name', 'LIKE', $search);
+                $dbQuery->whereLike('name', $search);
             }
         }
         if (0 !== count($types)) {
@@ -596,11 +614,11 @@ class AccountRepository implements AccountRepositoryInterface
                 $search = sprintf('%%%s%%', $part);
                 $dbQuery->where(
                     static function (EloquentBuilder $q1) use ($search): void { // @phpstan-ignore-line
-                        $q1->where('accounts.iban', 'LIKE', $search);
+                        $q1->whereLike('accounts.iban', $search);
                         $q1->orWhere(
                             static function (EloquentBuilder $q2) use ($search): void {
                                 $q2->where('account_meta.name', '=', 'account_number');
-                                $q2->where('account_meta.data', 'LIKE', $search);
+                                $q2->whereLike('account_meta.data', $search);
                             }
                         );
                     }
@@ -625,16 +643,5 @@ class AccountRepository implements AccountRepositoryInterface
         $factory->setUser($this->user);
 
         return $factory->create($data);
-    }
-
-    /**
-     * @throws FireflyException
-     */
-    public function update(Account $account, array $data): Account
-    {
-        /** @var AccountUpdateService $service */
-        $service = app(AccountUpdateService::class);
-
-        return $service->update($account, $data);
     }
 }

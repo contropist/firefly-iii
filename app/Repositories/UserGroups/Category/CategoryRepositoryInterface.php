@@ -1,4 +1,5 @@
 <?php
+
 /*
  * CategoryRepositoryInterface.php
  * Copyright (c) 2024 james@firefly-iii.org
@@ -30,5 +31,5 @@ interface CategoryRepositoryInterface
     /**
      * Search for a category using wild cards. Uses the database, so case sensitive.
      */
-    public function searchCategory(string $query, int $limit): Collection;
+    public function searchCategory(array $query, int $limit): Collection;
 }

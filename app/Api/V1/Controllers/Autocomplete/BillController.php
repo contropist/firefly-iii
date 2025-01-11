@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BillController.php
  * Copyright (c) 2020 james@firefly-iii.org
@@ -66,7 +67,7 @@ class BillController extends Controller
         $filtered = $result->map(
             static function (Bill $item) {
                 return [
-                    'id'     => (string)$item->id,
+                    'id'     => (string) $item->id,
                     'name'   => $item->name,
                     'active' => $item->active,
                 ];

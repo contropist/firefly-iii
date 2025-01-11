@@ -1,4 +1,5 @@
 <?php
+
 /*
  * translations.php
  * Copyright (c) 2024 james@firefly-iii.org.
@@ -52,6 +53,17 @@ return [
                 'bad_type_destination',
             ],
             'firefly'    => [
+                'liability_direction_debit_short',
+                'liability_direction_credit_short',
+                'liability_direction_null_short',
+                'interest_calc_yearly',
+                'interest_calc_',
+                'interest_calc_null',
+                'interest_calc_daily',
+                'interest_calc_monthly',
+                'interest_calc_weekly',
+                'interest_calc_half-year',
+                'interest_calc_quarterly',
                 'spent',
                 'administration_owner',
                 'administration_you',
@@ -96,6 +108,7 @@ return [
                 'expense_account',
                 'revenue_account',
                 'budget',
+                'account_type_undefined',
                 'account_type_Asset account',
                 'account_type_Expense account',
                 'account_type_Revenue account',
@@ -257,12 +270,22 @@ return [
                 'response',
                 'visit_webhook_url',
                 'reset_webhook_secret',
+                'header_exchange_rates',
+                'exchange_rates_intro',
+                'exchange_rates_from_to',
+                'exchange_rates_intro_rates',
+                'header_exchange_rates_rates',
+                'header_exchange_rates_table',
+                'help_rate_form',
+                'add_new_rate',
+                'save_new_rate',
             ],
             'form'    => [
                 'url',
                 'active',
                 'interest_date',
                 'title',
+                'date',
                 'book_date',
                 'process_date',
                 'due_date',
@@ -273,6 +296,9 @@ return [
                 'webhook_response',
                 'webhook_trigger',
                 'webhook_delivery',
+                'from_currency_to_currency',
+                'to_currency_from_currency',
+                'rate',
             ],
             'list'    => [
                 'active',

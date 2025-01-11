@@ -1,4 +1,5 @@
 <?php
+
 /**
  * GroupCollectorInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -457,6 +458,11 @@ interface GroupCollectorInterface
     public function setCurrency(TransactionCurrency $currency): self;
 
     /**
+     * Limit results to a specific currency, either foreign or normal one.
+     */
+    public function setNormalCurrency(TransactionCurrency $currency): self;
+
+    /**
      * Set destination accounts.
      */
     public function setDestinationAccounts(Collection $accounts): self;
@@ -731,4 +737,6 @@ interface GroupCollectorInterface
     public function yearIs(string $year): self;
 
     public function yearIsNot(string $year): self;
+
+    public function accountBalanceIs(string $direction, string $operator, string $value): self;
 }

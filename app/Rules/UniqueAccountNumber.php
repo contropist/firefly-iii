@@ -1,4 +1,5 @@
 <?php
+
 /**
  * UniqueAccountNumber.php
  * Copyright (c) 2021 james@firefly-iii.org
@@ -64,7 +65,7 @@ class UniqueAccountNumber implements ValidationRule
      */
     public function message(): string
     {
-        return (string)trans('validation.unique_account_number_for_user');
+        return (string) trans('validation.unique_account_number_for_user');
     }
 
     /**

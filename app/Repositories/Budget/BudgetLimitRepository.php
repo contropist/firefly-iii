@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BudgetLimitRepository.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -28,6 +29,7 @@ use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Factory\TransactionCurrencyFactory;
 use FireflyIII\Models\Budget;
 use FireflyIII\Models\BudgetLimit;
+use FireflyIII\Models\Note;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\User;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -254,6 +256,12 @@ class BudgetLimitRepository implements BudgetLimitRepositoryInterface
         ;
     }
 
+    #[\Override]
+    public function getNoteText(BudgetLimit $budgetLimit): string
+    {
+        return (string) $budgetLimit->notes()->first()?->text;
+    }
+
     public function setUser(null|Authenticatable|User $user): void
     {
         if ($user instanceof User) {
@@ -277,7 +285,7 @@ class BudgetLimitRepository implements BudgetLimitRepositoryInterface
         $currency->save();
 
         // find the budget:
-        $budget                         = $this->user->budgets()->find((int)$data['budget_id']);
+        $budget                         = $this->user->budgets()->find((int) $data['budget_id']);
         if (null === $budget) {
             throw new FireflyException('200004: Budget does not exist.');
         }
@@ -302,6 +310,12 @@ class BudgetLimitRepository implements BudgetLimitRepositoryInterface
         $limit->amount                  = $data['amount'];
         $limit->transaction_currency_id = $currency->id;
         $limit->save();
+
+        $noteText                       = (string) ($data['notes'] ?? '');
+        if ('' !== $noteText) {
+            $this->setNoteText($limit, $noteText);
+        }
+
         app('log')->debug(sprintf('Created new budget limit with ID #%d and amount %s', $limit->id, $data['amount']));
 
         return $limit;
@@ -316,6 +330,23 @@ class BudgetLimitRepository implements BudgetLimitRepositoryInterface
         ;
     }
 
+    #[\Override]
+    public function setNoteText(BudgetLimit $budgetLimit, string $text): void
+    {
+        $dbNote = $budgetLimit->notes()->first();
+        if ('' !== $text) {
+            if (null === $dbNote) {
+                $dbNote = new Note();
+                $dbNote->noteable()->associate($budgetLimit);
+            }
+            $dbNote->text = trim($text);
+            $dbNote->save();
+
+            return;
+        }
+        $dbNote?->delete();
+    }
+
     /**
      * @throws FireflyException
      */
@@ -323,8 +354,15 @@ class BudgetLimitRepository implements BudgetLimitRepositoryInterface
     {
         $budgetLimit->amount                  = array_key_exists('amount', $data) ? $data['amount'] : $budgetLimit->amount;
         $budgetLimit->budget_id               = array_key_exists('budget_id', $data) ? $data['budget_id'] : $budgetLimit->budget_id;
-        $budgetLimit->start_date              = array_key_exists('start', $data) ? $data['start']->format('Y-m-d 00:00:00') : $budgetLimit->start_date;
-        $budgetLimit->end_date                = array_key_exists('end', $data) ? $data['end']->format('Y-m-d 23:59:59') : $budgetLimit->end_date;
+
+        if (array_key_exists('start', $data)) {
+            $budgetLimit->start_date    = $data['start']->startOfDay();
+            $budgetLimit->start_date_tz = $data['start']->format('e');
+        }
+        if (array_key_exists('end', $data)) {
+            $budgetLimit->end_date    = $data['end']->endOfDay();
+            $budgetLimit->end_date_tz = $data['end']->format('e');
+        }
 
         // if no currency has been provided, use the user's default currency:
         $currency                             = null;
@@ -345,13 +383,18 @@ class BudgetLimitRepository implements BudgetLimitRepositoryInterface
         $budgetLimit->transaction_currency_id = $currency->id;
         $budgetLimit->save();
 
+        // update notes if they exist.
+        if (array_key_exists('notes', $data)) {
+            $this->setNoteText($budgetLimit, (string) $data['notes']);
+        }
+
         return $budgetLimit;
     }
 
     public function updateLimitAmount(Budget $budget, Carbon $start, Carbon $end, string $amount): ?BudgetLimit
     {
         // count the limits:
-        $limits            = $budget->budgetlimits()
+        $limits               = $budget->budgetlimits()
             ->where('budget_limits.start_date', $start->format('Y-m-d 00:00:00'))
             ->where('budget_limits.end_date', $end->format('Y-m-d 00:00:00'))
             ->count('budget_limits.*')
@@ -360,7 +403,7 @@ class BudgetLimitRepository implements BudgetLimitRepositoryInterface
 
         // there might be a budget limit for these dates:
         /** @var null|BudgetLimit $limit */
-        $limit             = $budget->budgetlimits()
+        $limit                = $budget->budgetlimits()
             ->where('budget_limits.start_date', $start->format('Y-m-d 00:00:00'))
             ->where('budget_limits.end_date', $end->format('Y-m-d 00:00:00'))
             ->first(['budget_limits.*'])
@@ -395,11 +438,13 @@ class BudgetLimitRepository implements BudgetLimitRepositoryInterface
         }
         app('log')->debug('No existing budget limit, create a new one');
         // or create one and return it.
-        $limit             = new BudgetLimit();
+        $limit                = new BudgetLimit();
         $limit->budget()->associate($budget);
-        $limit->start_date = $start->startOfDay();
-        $limit->end_date   = $end->startOfDay();
-        $limit->amount     = $amount;
+        $limit->start_date    = $start->startOfDay();
+        $limit->start_date_tz = $start->format('e');
+        $limit->end_date      = $end->startOfDay();
+        $limit->end_date_tz   = $end->format('e');
+        $limit->amount        = $amount;
         $limit->save();
         app('log')->debug(sprintf('Created new budget limit with ID #%d and amount %s', $limit->id, $amount));
 

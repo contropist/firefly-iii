@@ -1,4 +1,5 @@
 <?php
+
 /**
  * UniqueIban.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -25,6 +26,7 @@ namespace FireflyIII\Rules;
 
 use FireflyIII\Models\Account;
 use FireflyIII\Models\AccountType;
+use FireflyIII\Support\Facades\Steam;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
@@ -66,13 +68,13 @@ class UniqueIban implements ValidationRule
      */
     public function message(): string
     {
-        return (string)trans('validation.unique_iban_for_user');
+        return (string) trans('validation.unique_iban_for_user');
     }
 
     public function validate(string $attribute, mixed $value, \Closure $fail): void
     {
         if (!$this->passes($attribute, $value)) {
-            $fail((string)trans('validation.unique_iban_for_user'));
+            $fail((string) trans('validation.unique_iban_for_user'));
         }
     }
 
@@ -95,6 +97,9 @@ class UniqueIban implements ValidationRule
         $maxCounts = $this->getMaxOccurrences();
 
         foreach ($maxCounts as $type => $max) {
+            // make sure to trim the value of $value so all spaces are removed.
+            $value = Steam::filterSpaces($value);
+
             $count = $this->countHits($type, $value);
             app('log')->debug(sprintf('Count for "%s" and IBAN "%s" is %d', $type, $value, $count));
             if ($count > $max) {

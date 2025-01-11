@@ -180,6 +180,15 @@ Breadcrumbs::for(
 );
 
 Breadcrumbs::for(
+    'admin.notification.index',
+    static function (Generator $breadcrumbs): void {
+        $breadcrumbs->parent('home');
+        $breadcrumbs->push(trans('firefly.administration'), route('admin.index'));
+        $breadcrumbs->push(trans('breadcrumbs.notification_index'), route('admin.notification.index'));
+    }
+);
+
+Breadcrumbs::for(
     'admin.users',
     static function (Generator $breadcrumbs): void {
         $breadcrumbs->parent('admin.index');
@@ -687,13 +696,7 @@ Breadcrumbs::for(
     }
 );
 
-Breadcrumbs::for(
-    'profile.code',
-    static function (Generator $breadcrumbs): void {
-        $breadcrumbs->parent('home');
-        $breadcrumbs->push(trans('breadcrumbs.profile'), route('profile.index'));
-    }
-);
+
 
 Breadcrumbs::for(
     'profile.new-backup-codes',
@@ -710,6 +713,63 @@ Breadcrumbs::for(
         $breadcrumbs->push(trans('breadcrumbs.logout_others'), route('profile.logout-others'));
     }
 );
+
+// Profile MFA
+Breadcrumbs::for(
+    'profile.mfa.index',
+    static function (Generator $breadcrumbs): void {
+        $breadcrumbs->parent('profile.index');
+        $breadcrumbs->push(trans('breadcrumbs.profile_mfa'), route('profile.mfa.index'));
+    }
+);
+Breadcrumbs::for(
+    'profile.mfa.enableMFA',
+    static function (Generator $breadcrumbs): void {
+        $breadcrumbs->parent('profile.mfa.index');
+        $breadcrumbs->push(trans('breadcrumbs.mfa_enableMFA'), route('profile.mfa.enableMFA'));
+    }
+);
+
+Breadcrumbs::for(
+    'profile.mfa.disableMFA',
+    static function (Generator $breadcrumbs): void {
+        $breadcrumbs->parent('profile.mfa.index');
+        $breadcrumbs->push(trans('breadcrumbs.mfa_disableMFA'), route('profile.mfa.disableMFA'));
+    }
+);
+
+Breadcrumbs::for(
+    'profile.mfa.backup-codes',
+    static function (Generator $breadcrumbs): void {
+        $breadcrumbs->parent('profile.mfa.index');
+        $breadcrumbs->push(trans('breadcrumbs.mfa_backup_codes'), route('profile.mfa.backup-codes'));
+    }
+);
+Breadcrumbs::for(
+    'profile.mfa.backup-codes.post',
+    static function (Generator $breadcrumbs): void {
+        $breadcrumbs->parent('profile.mfa.index');
+        $breadcrumbs->push(trans('breadcrumbs.mfa_backup_codes'), route('profile.mfa.backup-codes'));
+    }
+);
+
+// exchange rates
+Breadcrumbs::for(
+    'exchange-rates.index',
+    static function (Generator $breadcrumbs): void {
+        $breadcrumbs->parent('home');
+        $breadcrumbs->push(trans('breadcrumbs.exchange_rates_index'), route('exchange-rates.index'));
+    }
+);
+
+Breadcrumbs::for(
+    'exchange-rates.rates',
+    static function (Generator $breadcrumbs, TransactionCurrency $from, TransactionCurrency $to): void {
+        $breadcrumbs->parent('exchange-rates.index');
+        $breadcrumbs->push(trans('breadcrumbs.exchange_rates_rates', ['from' => $from->name, 'to' => $to->name]), route('exchange-rates.rates', [$from->code, $to->code]));
+    }
+);
+
 
 // PROFILE
 Breadcrumbs::for(

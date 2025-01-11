@@ -303,7 +303,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
     {
         $entry = $this->user->ruleGroups()->max('order');
 
-        return (int)$entry;
+        return (int) $entry;
     }
 
     public function getRuleGroupsWithRules(?string $filter): Collection
@@ -364,14 +364,14 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
 
     public function maxOrder(): int
     {
-        return (int)$this->user->ruleGroups()->where('active', true)->max('order');
+        return (int) $this->user->ruleGroups()->where('active', true)->max('order');
     }
 
     public function searchRuleGroup(string $query, int $limit): Collection
     {
         $search = $this->user->ruleGroups();
         if ('' !== $query) {
-            $search->where('rule_groups.title', 'LIKE', sprintf('%%%s%%', $query));
+            $search->whereLike('rule_groups.title', sprintf('%%%s%%', $query));
         }
         $search->orderBy('rule_groups.order', 'ASC')
             ->orderBy('rule_groups.title', 'ASC')
@@ -448,7 +448,7 @@ class RuleGroupRepository implements RuleGroupRepositoryInterface
         // order
         if (array_key_exists('order', $data) && $ruleGroup->order !== $data['order']) {
             $this->resetOrder();
-            $this->setOrder($ruleGroup, (int)$data['order']);
+            $this->setOrder($ruleGroup, (int) $data['order']);
         }
 
         $ruleGroup->save();

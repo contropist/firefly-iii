@@ -50,21 +50,31 @@ class FrontpageController extends Controller
             if (1 === bccomp($amount, '0')) {
                 // percentage!
                 $pct    = 0;
-                if (0 !== bccomp($piggyBank->targetamount, '0')) {
-                    $pct = (int)bcmul(bcdiv($amount, $piggyBank->targetamount), '100');
+                if (0 !== bccomp($piggyBank->target_amount, '0')) {
+                    $pct = (int) bcmul(bcdiv($amount, $piggyBank->target_amount), '100');
                 }
 
                 $entry  = [
                     'id'         => $piggyBank->id,
                     'name'       => $piggyBank->name,
                     'amount'     => $amount,
-                    'target'     => $piggyBank->targetamount,
+                    'target'     => $piggyBank->target_amount,
                     'percentage' => $pct,
                 ];
 
                 $info[] = $entry;
             }
         }
+
+        // sort by current percentage (lowest at the top)
+        uasort(
+            $info,
+            static function (array $a, array $b) {
+                return $a['percentage'] <=> $b['percentage'];
+            }
+        );
+
+
         $html = '';
         if (0 !== count($info)) {
             try {

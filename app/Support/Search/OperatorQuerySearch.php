@@ -1,4 +1,5 @@
 <?php
+
 /*
  * OperatorQuerySearch.php
  * Copyright (c) 2021 james@firefly-iii.org
@@ -200,7 +201,7 @@ class OperatorQuerySearch implements SearchInterface
             case Emoticon::class:
             case Emoji::class:
             case Mention::class:
-                $allWords      = (string)$searchNode->getValue();
+                $allWords      = (string) $searchNode->getValue();
                 app('log')->debug(sprintf('Add words "%s" to search string, because Node class is "%s"', $allWords, $class));
                 $this->words[] = $allWords;
 
@@ -230,11 +231,11 @@ class OperatorQuerySearch implements SearchInterface
                 // must be valid operator:
                 if (
                     in_array($operator, $this->validOperators, true)
-                    && $this->updateCollector($operator, (string)$value, $prohibited)) {
+                    && $this->updateCollector($operator, (string) $value, $prohibited)) {
                     $this->operators->push(
                         [
                             'type'       => self::getRootOperator($operator),
-                            'value'      => (string)$value,
+                            'value'      => (string) $value,
                             'prohibited' => $prohibited,
                         ]
                     );
@@ -244,7 +245,7 @@ class OperatorQuerySearch implements SearchInterface
                     app('log')->debug(sprintf('Added INVALID operator type "%s"', $operator));
                     $this->invalidOperators[] = [
                         'type'  => $operator,
-                        'value' => (string)$value,
+                        'value' => (string) $value,
                     ];
                 }
         }
@@ -444,7 +445,7 @@ class OperatorQuerySearch implements SearchInterface
                 break;
 
             case 'source_account_id':
-                $account                 = $this->accountRepository->find((int)$value);
+                $account                 = $this->accountRepository->find((int) $value);
                 if (null !== $account) {
                     $this->collector->setSourceAccounts(new Collection([$account]));
                 }
@@ -456,7 +457,7 @@ class OperatorQuerySearch implements SearchInterface
                 break;
 
             case '-source_account_id':
-                $account                 = $this->accountRepository->find((int)$value);
+                $account                 = $this->accountRepository->find((int) $value);
                 if (null !== $account) {
                     $this->collector->excludeSourceAccounts(new Collection([$account]));
                 }
@@ -572,7 +573,7 @@ class OperatorQuerySearch implements SearchInterface
                 break;
 
             case 'destination_account_id':
-                $account                 = $this->accountRepository->find((int)$value);
+                $account                 = $this->accountRepository->find((int) $value);
                 if (null !== $account) {
                     $this->collector->setDestinationAccounts(new Collection([$account]));
                 }
@@ -583,7 +584,7 @@ class OperatorQuerySearch implements SearchInterface
                 break;
 
             case '-destination_account_id':
-                $account                 = $this->accountRepository->find((int)$value);
+                $account                 = $this->accountRepository->find((int) $value);
                 if (null !== $account) {
                     $this->collector->excludeDestinationAccounts(new Collection([$account]));
                 }
@@ -597,7 +598,7 @@ class OperatorQuerySearch implements SearchInterface
                 $parts                   = explode(',', $value);
                 $collection              = new Collection();
                 foreach ($parts as $accountId) {
-                    $account = $this->accountRepository->find((int)$accountId);
+                    $account = $this->accountRepository->find((int) $accountId);
                     if (null !== $account) {
                         $collection->push($account);
                     }
@@ -615,7 +616,7 @@ class OperatorQuerySearch implements SearchInterface
                 $parts                   = explode(',', $value);
                 $collection              = new Collection();
                 foreach ($parts as $accountId) {
-                    $account = $this->accountRepository->find((int)$accountId);
+                    $account = $this->accountRepository->find((int) $accountId);
                     if (null !== $account) {
                         $collection->push($account);
                     }
@@ -1822,6 +1823,74 @@ class OperatorQuerySearch implements SearchInterface
                 $this->collector->setSepaCT($value);
 
                 break;
+
+            case 'source_balance_gte':
+            case '-source_balance_lt':
+                $this->collector->accountBalanceIs('source', '>=', $value);
+
+                break;
+
+            case '-source_balance_gte':
+            case 'source_balance_lt':
+                $this->collector->accountBalanceIs('source', '<', $value);
+
+                break;
+
+            case 'source_balance_gt':
+            case '-source_balance_lte':
+                $this->collector->accountBalanceIs('source', '>', $value);
+
+                break;
+
+            case '-source_balance_gt':
+            case 'source_balance_lte':
+                $this->collector->accountBalanceIs('source', '<=', $value);
+
+                break;
+
+            case 'source_balance_is':
+                $this->collector->accountBalanceIs('source', '==', $value);
+
+                break;
+
+            case '-source_balance_is':
+                $this->collector->accountBalanceIs('source', '!=', $value);
+
+                break;
+
+            case 'destination_balance_gte':
+            case '-destination_balance_lt':
+                $this->collector->accountBalanceIs('destination', '>=', $value);
+
+                break;
+
+            case '-destination_balance_gte':
+            case 'destination_balance_lt':
+                $this->collector->accountBalanceIs('destination', '<', $value);
+
+                break;
+
+            case 'destination_balance_gt':
+            case '-destination_balance_lte':
+                $this->collector->accountBalanceIs('destination', '>', $value);
+
+                break;
+
+            case '-destination_balance_gt':
+            case 'destination_balance_lte':
+                $this->collector->accountBalanceIs('destination', '<=', $value);
+
+                break;
+
+            case 'destination_balance_is':
+                $this->collector->accountBalanceIs('destination', '==', $value);
+
+                break;
+
+            case '-destination_balance_is':
+                $this->collector->accountBalanceIs('destination', '!=', $value);
+
+                break;
         }
 
         return true;
@@ -2002,7 +2071,7 @@ class OperatorQuerySearch implements SearchInterface
         $filtered        = $accounts->filter(
             static function (Account $account) use ($value, $stringMethod) {
                 // either IBAN or account number
-                $ibanMatch      = $stringMethod(strtolower((string)$account->iban), strtolower($value));
+                $ibanMatch      = $stringMethod(strtolower((string) $account->iban), strtolower($value));
                 $accountNrMatch = false;
 
                 /** @var AccountMeta $meta */
@@ -2776,7 +2845,7 @@ class OperatorQuerySearch implements SearchInterface
         $this->collector->setUser($user);
         $this->collector->withAccountInformation()->withCategoryInformation()->withBudgetInformation();
 
-        $this->setLimit((int)app('preferences')->getForUser($user, 'listPageSize', 50)->data);
+        $this->setLimit((int) app('preferences')->getForUser($user, 'listPageSize', 50)->data);
     }
 
     public function setLimit(int $limit): void

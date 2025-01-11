@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AppendsLocationData.php
  * Copyright (c) 2020 james@firefly-iii.org
@@ -47,14 +48,14 @@ trait AppendsLocationData
 
     private function validLongitude(string $longitude): bool
     {
-        $number = (float)$longitude;
+        $number = (float) $longitude;
 
         return $number >= -180 && $number <= 180;
     }
 
     private function validLatitude(string $latitude): bool
     {
-        $number = (float)$latitude;
+        $number = (float) $latitude;
 
         return $number >= -90 && $number <= 90;
     }

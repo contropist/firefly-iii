@@ -29,6 +29,7 @@ use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Repositories\Currency\CurrencyRepositoryInterface;
 use FireflyIII\Repositories\User\UserRepositoryInterface;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Bus\Queueable;
@@ -94,14 +95,14 @@ class DownloadExchangeRates implements ShouldQueue
     private function downloadRates(TransactionCurrency $currency): void
     {
         app('log')->debug(sprintf('Now downloading new exchange rates for currency %s.', $currency->code));
-        $base       = sprintf('%s/%s/%s', (string)config('cer.url'), $this->date->year, $this->date->isoWeek);
+        $base       = sprintf('%s/%s/%s', (string) config('cer.url'), $this->date->year, $this->date->isoWeek);
         $client     = new Client();
         $url        = sprintf('%s/%s.json', $base, $currency->code);
 
         try {
             $res = $client->get($url);
-        } catch (RequestException $e) {
-            app('log')->warning(sprintf('Trying to grab "%s" resulted in error "%d".', $url, $e->getMessage()));
+        } catch (ConnectException|RequestException $e) {
+            app('log')->warning(sprintf('Trying to grab "%s" resulted in error "%s".', $url, $e->getMessage()));
 
             return;
         }
@@ -111,7 +112,7 @@ class DownloadExchangeRates implements ShouldQueue
 
             return;
         }
-        $body       = (string)$res->getBody();
+        $body       = (string) $res->getBody();
         $json       = json_decode($body, true);
         if (false === $json || null === $json) {
             app('log')->warning(sprintf('Trying to grab "%s" resulted in bad JSON.', $url));

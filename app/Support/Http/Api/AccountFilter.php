@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AccountFilter.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,6 +24,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Support\Http\Api;
 
+use FireflyIII\Enums\AccountTypeEnum;
 use FireflyIII\Models\AccountType;
 
 /**
@@ -30,14 +32,10 @@ use FireflyIII\Models\AccountType;
  */
 trait AccountFilter
 {
-    /**
-     * All the available types.
-     */
-    protected function mapAccountTypes(string $type): array
-    {
-        $types = [
+    protected array $types
+        = [
             'all'                        => [
-                AccountType::DEFAULT,
+                AccountTypeEnum::DEFAULT->value,
                 AccountType::CASH,
                 AccountType::ASSET,
                 AccountType::EXPENSE,
@@ -87,6 +85,11 @@ trait AccountFilter
             'cc'                         => [AccountType::CREDITCARD],
         ];
 
-        return $types[$type] ?? $types['all'];
+    /**
+     * All the available types.
+     */
+    protected function mapAccountTypes(string $type): array
+    {
+        return $this->types[$type] ?? $this->types['all'];
     }
 }

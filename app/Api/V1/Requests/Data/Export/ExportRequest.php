@@ -1,4 +1,5 @@
 <?php
+
 /*
  * ExportRequest.php
  * Copyright (c) 2021 james@firefly-iii.org
@@ -51,7 +52,7 @@ class ExportRequest extends FormRequest
 
         $accounts           = new Collection();
         foreach ($parts as $part) {
-            $accountId = (int)$part;
+            $accountId = (int) $part;
             if (0 !== $accountId) {
                 $account = $repository->find($accountId);
                 if (null !== $account && AccountType::ASSET === $account->accountType->type) {

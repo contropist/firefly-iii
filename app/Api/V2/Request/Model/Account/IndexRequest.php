@@ -1,4 +1,5 @@
 <?php
+
 /*
  * IndexRequest.php
  * Copyright (c) 2024 james@firefly-iii.org.
@@ -27,6 +28,7 @@ use Carbon\Carbon;
 use FireflyIII\Support\Http\Api\AccountFilter;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
+use FireflyIII\Support\Request\GetFilterInstructions;
 use FireflyIII\Support\Request\GetSortInstructions;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -40,6 +42,7 @@ class IndexRequest extends FormRequest
     use AccountFilter;
     use ChecksLogin;
     use ConvertsDataTypes;
+    use GetFilterInstructions;
     use GetSortInstructions;
 
     public function getAccountTypes(): array

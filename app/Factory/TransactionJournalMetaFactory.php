@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionJournalMetaFactory.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -49,7 +50,7 @@ class TransactionJournalMetaFactory
             app('log')->debug('Is a carbon object.');
             $value = $data['data']->toW3cString();
         }
-        if ('' === (string)$value) {
+        if ('' === (string) $value) {
             // app('log')->debug('Is an empty string.');
             // don't store blank strings.
             if (null !== $entry) {

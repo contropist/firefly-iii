@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SecureHeaders.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,9 +24,9 @@ declare(strict_types=1);
 
 namespace FireflyIII\Http\Middleware;
 
+use Barryvdh\Debugbar\Facades\Debugbar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Vite;
-use Barryvdh\Debugbar\Facades\Debugbar;
 
 /**
  * Class SecureHeaders

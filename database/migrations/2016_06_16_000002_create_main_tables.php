@@ -284,32 +284,13 @@ class CreateMainTables extends Migration
                         $table->integer('budget_id', false, true);
                         $table->date('startdate');
                         $table->decimal('amount', 32, 12);
-                        $table->string('repeat_freq', 30);
+                        $table->string('repeat_freq', 30)->nullable();
                         $table->boolean('repeats')->default(0);
                         $table->foreign('budget_id')->references('id')->on('budgets')->onDelete('cascade');
                     }
                 );
             } catch (QueryException $e) {
                 app('log')->error(sprintf(self::TABLE_ERROR, 'budget_limits', $e->getMessage()));
-                app('log')->error(self::TABLE_ALREADY_EXISTS);
-            }
-        }
-        if (!Schema::hasTable('limit_repetitions')) {
-            try {
-                Schema::create(
-                    'limit_repetitions',
-                    static function (Blueprint $table): void {
-                        $table->increments('id');
-                        $table->timestamps();
-                        $table->integer('budget_limit_id', false, true);
-                        $table->date('startdate');
-                        $table->date('enddate');
-                        $table->decimal('amount', 32, 12);
-                        $table->foreign('budget_limit_id')->references('id')->on('budget_limits')->onDelete('cascade');
-                    }
-                );
-            } catch (QueryException $e) {
-                app('log')->error(sprintf(self::TABLE_ERROR, 'limit_repetitions', $e->getMessage()));
                 app('log')->error(self::TABLE_ALREADY_EXISTS);
             }
         }

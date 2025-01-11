@@ -73,9 +73,9 @@ class AccountSearch implements GenericSearchInterface
             case self::SEARCH_ALL:
                 $searchQuery->where(
                     static function (Builder $q) use ($like): void { // @phpstan-ignore-line
-                        $q->where('accounts.id', 'LIKE', $like);
-                        $q->orWhere('accounts.name', 'LIKE', $like);
-                        $q->orWhere('accounts.iban', 'LIKE', $like);
+                        $q->whereLike('accounts.id', $like);
+                        $q->orWhereLike('accounts.name', $like);
+                        $q->orWhereLike('accounts.iban', $like);
                     }
                 );
                 // meta data:
@@ -83,24 +83,24 @@ class AccountSearch implements GenericSearchInterface
                     static function (Builder $q) use ($originalQuery): void { // @phpstan-ignore-line
                         $json = json_encode($originalQuery, JSON_THROW_ON_ERROR);
                         $q->where('account_meta.name', '=', 'account_number');
-                        $q->where('account_meta.data', 'LIKE', $json);
+                        $q->whereLike('account_meta.data', $json);
                     }
                 );
 
                 break;
 
             case self::SEARCH_ID:
-                $searchQuery->where('accounts.id', '=', (int)$originalQuery);
+                $searchQuery->where('accounts.id', '=', (int) $originalQuery);
 
                 break;
 
             case self::SEARCH_NAME:
-                $searchQuery->where('accounts.name', 'LIKE', $like);
+                $searchQuery->whereLike('accounts.name', $like);
 
                 break;
 
             case self::SEARCH_IBAN:
-                $searchQuery->where('accounts.iban', 'LIKE', $like);
+                $searchQuery->whereLike('accounts.iban', $like);
 
                 break;
 

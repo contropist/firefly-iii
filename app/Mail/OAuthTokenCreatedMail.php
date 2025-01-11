@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OAuthTokenCreatedMail.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -55,7 +56,7 @@ class OAuthTokenCreatedMail extends Mailable
     {
         return $this
             ->markdown('emails.oauth-client-created')
-            ->subject((string)trans('email.oauth_created_subject'))
+            ->subject((string) trans('email.oauth_created_subject'))
         ;
     }
 }

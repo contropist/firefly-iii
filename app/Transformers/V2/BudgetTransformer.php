@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BudgetTransformer.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -86,7 +87,7 @@ class BudgetTransformer extends AbstractTransformer
         //        }
 
         return [
-            'id'         => (string)$budget->id,
+            'id'         => (string) $budget->id,
             'created_at' => $budget->created_at->toAtomString(),
             'updated_at' => $budget->updated_at->toAtomString(),
             'name'       => $budget->name,

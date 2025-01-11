@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CategoryTransformer.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -84,7 +85,7 @@ class CategoryTransformer extends AbstractTransformer
     {
         $return = [];
         foreach ($array as $data) {
-            $data['sum'] = app('steam')->bcround($data['sum'], (int)$data['currency_decimal_places']);
+            $data['sum'] = app('steam')->bcround($data['sum'], (int) $data['currency_decimal_places']);
             $return[]    = $data;
         }
 

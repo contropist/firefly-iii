@@ -1,4 +1,5 @@
 <?php
+
 /**
  * JournalCLIRepository.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -142,7 +143,7 @@ class JournalCLIRepository implements JournalCLIRepositoryInterface
         }
 
         // return when something else:
-        $return = (string)$value;
+        $return = (string) $value;
         $cache->store($return);
 
         return $return;
@@ -175,8 +176,8 @@ class JournalCLIRepository implements JournalCLIRepositoryInterface
 
         /** @var \stdClass $row */
         foreach ($result as $row) {
-            if ((int)$row->transaction_count > 2) {
-                $journalIds[] = (int)$row->id;
+            if ((int) $row->transaction_count > 2) {
+                $journalIds[] = (int) $row->id;
             }
         }
         $journalIds = array_unique($journalIds);

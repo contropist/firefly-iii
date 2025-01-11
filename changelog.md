@@ -3,6 +3,248 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## 6.2.0 - 2025-01-xx
+
+### Added
+
+- Multi-currency support. If you set `ENABLE_EXCHANGE_RATES=true` and optionally `ENABLE_EXTERNAL_RATES=true` Firefly III will try to calculate all foreign currencies back to your native currency. This is a work in progress, not all fields and all places will support this yet. Please check out the [documentation](https://docs.firefly-iii.org/explanation/financial-concepts/exchange-rates/).
+- Notifications support Nfty, Pushover, Slack and Discord.
+- Many new security related notifications.
+- [Issue 5523](https://github.com/firefly-iii/firefly-iii/issues/5523) (Add comment on a budget for a given month) reported by @n-serrette
+- [Issue 8531](https://github.com/firefly-iii/firefly-iii/issues/8531) (Add `notes` to transaction audit report) reported by @clouserw
+- [Issue 8307](https://github.com/firefly-iii/firefly-iii/issues/8307) (Notification support for Ntfy (and other push notification tools)) reported by @ragnarkarlsson
+- [Issue 7945](https://github.com/firefly-iii/firefly-iii/issues/7945) ("Rules" that only trigger manually) reported by @SekoiaTree
+- [Issue 6760](https://github.com/firefly-iii/firefly-iii/issues/6760) (Add a new trigger for automated rules) reported by @Gsyltc
+- [Issue 6557](https://github.com/firefly-iii/firefly-iii/issues/6557) (Piggy Banks - Draw Funds from Multiple Accounts) reported by @BugPhobic
+- [Issue 5532](https://github.com/firefly-iii/firefly-iii/issues/5532) (Asset prices and exchange rates) reported by @svozniuk
+- [Issue 6314](https://github.com/firefly-iii/firefly-iii/issues/6314) (Currencies and exchange rates) reported by @JC5
+- [Issue 9586](https://github.com/firefly-iii/firefly-iii/issues/9586) (Non en_US translated string in sign-up mail) reported by @benni347
+
+### Changed
+
+- Firefly III requires PHP 8.4.
+- [Issue 9501](https://github.com/firefly-iii/firefly-iii/issues/9501) (PHP8.4 support) reported by @JC5
+- Docker container no longer runs under root.
+- "Bills" are now called "subscriptions" to better reflect their purpose.
+
+### Removed
+
+- Removed support for PHP 8.3 and lower.
+- Removed Docker support for linux/arm/v7, linux/arm/v8 and linux/386. Sorry. 
+
+### Fixed
+
+- [Issue 9532](https://github.com/firefly-iii/firefly-iii/issues/9532) (ReportSum Integrity Check fails due to empty foreign_amount) reported by @SircasticFox
+- [Issue 7288](https://github.com/firefly-iii/firefly-iii/issues/7288) (currentMonthStart/currentMonthEnd not working for no-budget view) reported by @bradsk88
+
+### API
+
+- API changes related to new features are [documented](#).
+
+## 6.1.25 - 2024-12-19
+
+### Fixed
+
+- [Issue 9492](https://github.com/firefly-iii/firefly-iii/issues/9492) (API: `PUT /api/v1/transactions/ID` does not work with only `source_name`) reported by @dreautall
+- [Issue 9497](https://github.com/firefly-iii/firefly-iii/issues/9497) ('Attempt to read property "user" on null' error when running `php artisan firefly-iii:upgrade-database` on updating to v6.1.24) reported by @ChrisCarini
+- [Discussion 9546](https://github.com/orgs/firefly-iii/discussions/9546) (Using the Data Importer to import data is very slowly？) started by @shangyuok
+
+## 6.1.24 - 2024-11-24
+
+### Fixed
+
+- [Issue 9491](https://github.com/firefly-iii/firefly-iii/issues/9491) (Transactions created at midnight on the first day of a month are not listed correctly) reported by @Neroxeles
+
+## 6.1.23 - 2024-11-23
+
+### Added
+
+- Expand (future) timezone support.
+- [Issue 9451](https://github.com/firefly-iii/firefly-iii/issues/9451) (Trigger "Has at least this many attachments" is misnamed?) reported by @Kvan7
+- [Issue 9458](https://github.com/firefly-iii/firefly-iii/issues/9458) (The add transaction failed) reported by @wqwwffsytxwp
+- [Issue 9466](https://github.com/firefly-iii/firefly-iii/issues/9466) (First instance of recurring transaction not firing automatically or manually) reported by @makobot-sh
+- [PR 9468](https://github.com/firefly-iii/firefly-iii/pull/9468) (Transaction Model: explicitly cast decimal to string) reported by @yparitcher
+- [Issue 9477](https://github.com/firefly-iii/firefly-iii/issues/9477) (Default Financial report: Income vs Expense has missing months when multiple currencies are used) reported by @thomase1234
+- [PR 9488](https://github.com/firefly-iii/firefly-iii/pull/9488) (fix: set dest foreign_amount and foreign_currency_id for foreign transfers) reported by @antoniomrfranco
+- [PR 9483](https://github.com/firefly-iii/firefly-iii/pull/9483) (fix: include foreign_amount in transaction sum calculation) reported by @antoniomrfranco
+- Broken links in readme.
+
+## 6.1.22 - 2024-11-07
+
+### Added
+
+- [Discussion 8092](https://github.com/orgs/firefly-iii/discussions/8092) (Fresh Install - Register -> 403 Error - Forbidden) started by @pheonix-devapps
+- [Issue 9183](https://github.com/firefly-iii/firefly-iii/issues/9183) (2FA security improvements) reported by @JC5
+- Firefly III stores timezone data in a separate field, preparing for a switch to UTC (in the database).
+
+### Fixed
+
+- [Issue 9106](https://github.com/firefly-iii/firefly-iii/issues/9106) (Inactive accounts are inaccessible when no active accounts of that type exist) reported by @codemicro
+- [Issue 9147](https://github.com/firefly-iii/firefly-iii/issues/9147) (Store/Update Bill API end_date and extension_date cant be null in request) reported by @jkano
+- [Issue 9175](https://github.com/firefly-iii/firefly-iii/issues/9175) ("Attempt to read property "type" on null" when mass editing transactions) reported by @Still34
+- [Issue 9225](https://github.com/firefly-iii/firefly-iii/issues/9225) (Liability amount due calculated incorrectly on liabilities list when the liability is settled with a transfer to another liability) reported by @uumas
+- [Discussion 9234](https://github.com/orgs/firefly-iii/discussions/9234) (Unsupported cipher or incorrect key length ( first run )) started by @spectroman
+- [Issue 9236](https://github.com/firefly-iii/firefly-iii/issues/9236) (Autocomplete not working for rrules having the bill as a trigger) reported by @pvieira84
+- [Issue 9282](https://github.com/firefly-iii/firefly-iii/issues/9282) (Default report - no transactions for no budget) reported by @rymrg 
+- [Issue 9294](https://github.com/firefly-iii/firefly-iii/issues/9294) (Repetition counts ignored for recurring transactions) reported by @Syncena
+- [Issue 9303](https://github.com/firefly-iii/firefly-iii/issues/9303) (Rules > Rule > Action) reported by @EricVanCaenenberghe
+- [Issue 9305](https://github.com/firefly-iii/firefly-iii/issues/9305) (Recurring transactions get group title on overview page) reported by @zeitwidrig
+- [Discussion 9324](https://github.com/orgs/firefly-iii/discussions/9324) (Consistent behavior accross DB Engines) started by @stackcoder
+- [Issue 9360](https://github.com/firefly-iii/firefly-iii/issues/9360) (Date incorrectly shown) reported by @enboig
+- [Issue 9389](https://github.com/firefly-iii/firefly-iii/issues/9389) (Budget and Bill field on Recurring transactions not updating) reported by @HHUBSS
+- [Issue 9416](https://github.com/firefly-iii/firefly-iii/issues/9416) (Linking Transaction to Bill doesn't mark as paid for 31st) reported by @harrhunt
+- [Issue 9427](https://github.com/firefly-iii/firefly-iii/issues/9427) (The standard financial report does not show all transactions for the income categories) reported by @Neroxeles
+- [Issue 9443](https://github.com/firefly-iii/firefly-iii/issues/9443) (Budget report on inactive budget gives a 404) reported by @adyanth
+- [Issue 9444](https://github.com/firefly-iii/firefly-iii/issues/9444) (Printing a page does not include dates) reported by @cachho 
+- [Issue 9447](https://github.com/firefly-iii/firefly-iii/issues/9447) (Transaction doesn't show up when attaching HTML file) reported by @Marc928132
+
+### API
+
+- API version is no longer distinguished from Firefly III version. API jumps from v2.1.0 to v6.1.22
+- API v2 is cleaned up and misses a few previously available endpoints. They will be added in the future.
+- [Discussion 9271](https://github.com/orgs/firefly-iii/discussions/9271) (/v2/chart/balance/balance ignoring the `period` parameter) started by @victorbalssa
+
+## 6.1.21 - 2024-09-30
+
+### Added
+
+- Enabled the expression engine built by @michaelhthomas. Read more about it in [the documentation](https://docs.firefly-iii.org/references/firefly-iii/rule-expressions/).
+- Add running balance data, see if it can be used in the layout in the future.
+- [PR 9160](https://github.com/firefly-iii/firefly-iii/pull/9160) (add test cases for api/v1/autocomplete/CategoryController) reported by @tasnim0tantawi
+- [PR 9178](https://github.com/firefly-iii/firefly-iii/pull/9178) (Add  test cases for Api\V1\Controllers\Autocomplete\BillController & BudgetController) reported by @tasnim0tantawi
+- [PR 9171](https://github.com/firefly-iii/firefly-iii/pull/9171) (Add about test) reported by @mzhubail
+
+### Changed
+
+- [PR 9096](https://github.com/firefly-iii/firefly-iii/pull/9096) (chore: fix some comments) reported by @withbest
+
+### Fixed
+
+- [Issue 9078](https://github.com/firefly-iii/firefly-iii/issues/9078) (bcadd exception while using POST transactions) reported by @dbtdsilva
+- [Discussion 9080](https://github.com/orgs/firefly-iii/discussions/9080) (Incorrect sorting on expense accounts) started by @pc-zookeeper
+- [Issue 9084](https://github.com/firefly-iii/firefly-iii/issues/9084) (API Call for bills/nextExpectedMatch does not update) reported by @marcelweikum
+- [Issue 9103](https://github.com/firefly-iii/firefly-iii/issues/9103) (Default Currency does not apply to Accounts.) reported by @chrisgriff1512
+- [Issue 9140](https://github.com/firefly-iii/firefly-iii/issues/9140) (Dashboard 'Today' option chooses 1st of month (not current date)) reported by @PAS-BC
+- [PR 9179](https://github.com/firefly-iii/firefly-iii/pull/9179) (fix Navigation.php MTD logic to make tests pass.) reported by @tasnim0tantawi
+- [PR 9239](https://github.com/firefly-iii/firefly-iii/pull/9239) (Fix webhook index page when Firefly is not served at root) reported by @jfpedroza
+- [Issue 9168](https://github.com/firefly-iii/firefly-iii/issues/9168) (Custom logout URL doesn't work.) reported by @JC5
+- [Issue 9155](https://github.com/firefly-iii/firefly-iii/issues/9155) (internal_reference_is does not correctly match numeric internal references) reported by @Lrns123
+- [Issue 9275](https://github.com/firefly-iii/firefly-iii/issues/9275) (Long wait when editing a transaction) reported by @JC5
+- [Issue 9278](https://github.com/firefly-iii/firefly-iii/issues/9278) (Update to v6.1.20 changed Balance of Account) reported by @JeuJeus
+- [Issue 9281](https://github.com/firefly-iii/firefly-iii/issues/9281) (Update to v6.1.20 leads to a type error) reported by @krakonos1602
+
+### API
+
+- Expand v2 API
+
+## 6.1.20 - 2024-09-29
+
+### Added
+
+- Enabled the expression engine built by @michaelhthomas. Read more about it in [the documentation](https://docs.firefly-iii.org/references/firefly-iii/rule-expressions/).
+- Add running balance data, see if it can be used in the layout in the future.
+- [PR 9160](https://github.com/firefly-iii/firefly-iii/pull/9160) (add test cases for api/v1/autocomplete/CategoryController) reported by @tasnim0tantawi
+- [PR 9178](https://github.com/firefly-iii/firefly-iii/pull/9178) (Add  test cases for Api\V1\Controllers\Autocomplete\BillController & BudgetController) reported by @tasnim0tantawi
+- [PR 9171](https://github.com/firefly-iii/firefly-iii/pull/9171) (Add about test) reported by @mzhubail
+
+### Changed
+
+- [PR 9096](https://github.com/firefly-iii/firefly-iii/pull/9096) (chore: fix some comments) reported by @withbest
+
+### Fixed
+
+- [Issue 9078](https://github.com/firefly-iii/firefly-iii/issues/9078) (bcadd exception while using POST transactions) reported by @dbtdsilva
+- [Discussion 9080](https://github.com/orgs/firefly-iii/discussions/9080) (Incorrect sorting on expense accounts) started by @pc-zookeeper
+- [Issue 9084](https://github.com/firefly-iii/firefly-iii/issues/9084) (API Call for bills/nextExpectedMatch does not update) reported by @marcelweikum
+- [Issue 9103](https://github.com/firefly-iii/firefly-iii/issues/9103) (Default Currency does not apply to Accounts.) reported by @chrisgriff1512
+- [Issue 9140](https://github.com/firefly-iii/firefly-iii/issues/9140) (Dashboard 'Today' option chooses 1st of month (not current date)) reported by @PAS-BC
+- [PR 9179](https://github.com/firefly-iii/firefly-iii/pull/9179) (fix Navigation.php MTD logic to make tests pass.) reported by @tasnim0tantawi
+- [PR 9239](https://github.com/firefly-iii/firefly-iii/pull/9239) (Fix webhook index page when Firefly is not served at root) reported by @jfpedroza
+- [Issue 9168](https://github.com/firefly-iii/firefly-iii/issues/9168) (Custom logout URL doesn't work.) reported by @JC5
+- [Issue 9155](https://github.com/firefly-iii/firefly-iii/issues/9155) (internal_reference_is does not correctly match numeric internal references) reported by @Lrns123
+
+### API
+
+- Expand v2 API
+
+## 6.1.19 - 2024-07-20
+
+### Fixed
+
+- [Issue 8844](https://github.com/firefly-iii/firefly-iii/issues/8844) (Split recurring transaction gets wrong (split) titles) reported by @dreautall
+- [Issue 8981](https://github.com/firefly-iii/firefly-iii/issues/8981) (bcadd() error during Docker container startup) reported by @NoiTheCat
+- [Issue 8986](https://github.com/firefly-iii/firefly-iii/issues/8986) (Search with "internal_reference_is" finds all transactions with full word of search string) reported by @baflo
+- [Issue 9009](https://github.com/firefly-iii/firefly-iii/issues/9009) (Incorrect Amount Calculation in Reconciliation for Bank Account A) reported by @realzsan3
+- [Issue 9021](https://github.com/firefly-iii/firefly-iii/issues/9021) (Incorrect "Expected Withdrawals" for Daily Recurring Transactions) reported by @xMarcii
+- [Issue 9022](https://github.com/firefly-iii/firefly-iii/issues/9022) (Calendar Not Showing Green Fields for Recurring Transactions) reported by @xMarcii
+- Improved currency exchange rate downloader
+
+## 6.1.18 - 2024-06-19
+
+### Fixed
+
+- [Issue 8978](https://github.com/firefly-iii/firefly-iii/issues/8978) (Error! Internal Firefly III Exception: bcadd(): Argument #2 ($num2) is not well-formed) reported by @el-rhazi
+- [Issue 8977](https://github.com/firefly-iii/firefly-iii/issues/8977) (Data Importer: "500 Server Error" with Firefly III v6.1.17) reported by @qtdzz
+
+### Security
+
+- [CVE-2024-37893](https://www.cve.org/CVERecord?id=CVE-2024-37893)
+
+## 6.1.17 - 2024-06-16
+
+### Added
+
+- New routine that calculates account balances, first start could take a while.
+
+### Removed
+
+- Removed auto-generated language files.
+
+### Fixed
+
+- [Issue 8907](https://github.com/firefly-iii/firefly-iii/issues/8907) (Error when adding initial balance: bcadd(): Argument #2 ($num2) must be of type string, int given) reported by @wnklmnn
+- [Issue 8911](https://github.com/firefly-iii/firefly-iii/issues/8911) (Docker container startup very slow) reported by @daften
+- [PR 8929](https://github.com/firefly-iii/firefly-iii/pull/8929) (icon title chgd from Deposit to Transfer) reported by @stevewasiura
+- [PR 8930](https://github.com/firefly-iii/firefly-iii/pull/8930) (icon title chgd from Deposit to Transfer) reported by @stevewasiura
+- [PR 8951](https://github.com/firefly-iii/firefly-iii/pull/8951) (add icon for delete action) reported by @stevewasiura
+- [PR 8957](https://github.com/firefly-iii/firefly-iii/pull/8957) (Remove nesting level for markdown) reported by @JeroenED
+- [Issue 8958](https://github.com/firefly-iii/firefly-iii/issues/8958) (Weird line appears above the UI when clicking on matching transactions for a rule) reported by @avee87
+- [Issue 8893](https://github.com/firefly-iii/firefly-iii/issues/8893) (API: `reconciled: false` does not have precedence) reported by @dreautall
+- [Issue 8954](https://github.com/firefly-iii/firefly-iii/issues/8954) (Wrong calculation of transaction without category) reported by @anarion80
+- [Issue 8927](https://github.com/firefly-iii/firefly-iii/issues/8927) (Converting deposit to transfer can set incorrect transaction currency) reported by @avee87
+- Various issues in release train.
+- There is a confirmation again before you delete data using the page in your profile
+
+### Security
+
+- Two (undisclosed) MFA bypass errors, reported by @Skelmis. Disclosure will follow in a few weeks.
+
+### API
+
+- Expand v2 chart API
+
+## 6.1.16 - 2024-05-20
+
+### Added
+
+- Added [THANKS.md] to give credit to all developers who help with the development of Firefly III.
+
+### Changed
+
+- New data model for "account balance" makes it easier to calculate and use multi-currency accounts. Not yet in use.
+
+### Fixed
+
+- [Issue 8840](https://github.com/firefly-iii/firefly-iii/issues/8840) (Budget page crash) reported by @JcMinarro
+- [Issue 8863](https://github.com/firefly-iii/firefly-iii/issues/8863) (Empty webhooks page) reported by @mrahmadt
+- [Issue 8867](https://github.com/firefly-iii/firefly-iii/issues/8867) (SQL Integrity constraint violation when inserting into budget_limits) reported by @HedgehogRidingAnOwl 
+- [Issue 8858](https://github.com/firefly-iii/firefly-iii/issues/8858) (A single Account constantly loses its Account NUmber / IBAN ) reported by @ypsilonkah
+
+### API
+
+- New filters for the v2 autocomplete endpoints.
+- Various attempts to make a better v2 accounts endpoint.
+
 ## 6.1.15 - 2024-04-24
 
 ### Fixed

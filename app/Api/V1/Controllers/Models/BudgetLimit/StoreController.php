@@ -1,4 +1,5 @@
 <?php
+
 /*
  * StoreController.php
  * Copyright (c) 2021 james@firefly-iii.org
@@ -68,6 +69,7 @@ class StoreController extends Controller
         $data               = $request->getAll();
         $data['start_date'] = $data['start'];
         $data['end_date']   = $data['end'];
+        $data['notes']      = $data['notes'];
         $data['budget_id']  = $budget->id;
 
         $budgetLimit        = $this->blRepository->store($data);

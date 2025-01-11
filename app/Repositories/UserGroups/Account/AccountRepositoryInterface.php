@@ -37,12 +37,6 @@ interface AccountRepositoryInterface
 {
     public function countAccounts(array $types): int;
 
-    public function getAccountTypes(Collection $accounts): Collection;
-
-    public function getLastActivity(Collection $accounts): array;
-
-    public function getMetaValues(Collection $accounts, array $fields): Collection;
-
     public function find(int $accountId): ?Account;
 
     public function findByAccountNumber(string $number, array $types): ?Account;
@@ -51,11 +45,15 @@ interface AccountRepositoryInterface
 
     public function findByName(string $name, array $types): ?Account;
 
+    public function getAccountBalances(Account $account): Collection;
+
     public function getAccountCurrency(Account $account): ?TransactionCurrency;
+
+    public function getAccountTypes(Collection $accounts): Collection;
 
     public function getAccountsById(array $accountIds): Collection;
 
-    public function getAccountsByType(array $types, ?array $sort = []): Collection;
+    public function getAccountsByType(array $types, ?array $sort = [], ?array $filters = []): Collection;
 
     /**
      * Used in the infinite accounts list.
@@ -64,10 +62,16 @@ interface AccountRepositoryInterface
 
     public function getActiveAccountsByType(array $types): Collection;
 
+    public function getLastActivity(Collection $accounts): array;
+
     /**
      * Return meta value for account. Null if not found.
      */
     public function getMetaValue(Account $account, string $field): ?string;
+
+    public function getMetaValues(Collection $accounts, array $fields): Collection;
+
+    public function getObjectGroups(Collection $accounts): array;
 
     public function getUserGroup(): UserGroup;
 
@@ -76,7 +80,7 @@ interface AccountRepositoryInterface
      */
     public function resetAccountOrder(): void;
 
-    public function searchAccount(string $query, array $types, int $limit): Collection;
+    public function searchAccount(string $query, array $types, int $page, int $limit): Collection;
 
     public function setUser(User $user): void;
 

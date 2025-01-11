@@ -79,12 +79,12 @@ class StoreRequest extends FormRequest
             'currency_id'    => 'numeric|exists:transaction_currencies,id',
             'currency_code'  => 'min:3|max:51|exists:transaction_currencies,code',
             'date'           => 'date|required',
-            'end_date'       => 'date|after:date',
-            'extension_date' => 'date|after:date',
+            'end_date'       => 'nullable|date|after:date',
+            'extension_date' => 'nullable|date|after:date',
             'repeat_freq'    => 'in:weekly,monthly,quarterly,half-year,yearly|required',
             'skip'           => 'min:0|max:31|numeric',
             'active'         => [new IsBoolean()],
-            'notes'          => 'min:1|max:32768',
+            'notes'          => 'nullable|min:1|max:32768',
         ];
     }
 
@@ -96,11 +96,11 @@ class StoreRequest extends FormRequest
         $validator->after(
             static function (Validator $validator): void {
                 $data = $validator->getData();
-                $min  = (string)($data['amount_min'] ?? '0');
-                $max  = (string)($data['amount_max'] ?? '0');
+                $min  = (string) ($data['amount_min'] ?? '0');
+                $max  = (string) ($data['amount_max'] ?? '0');
 
                 if (1 === bccomp($min, $max)) {
-                    $validator->errors()->add('amount_min', (string)trans('validation.amount_min_over_max'));
+                    $validator->errors()->add('amount_min', (string) trans('validation.amount_min_over_max'));
                 }
             }
         );

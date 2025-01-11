@@ -19,6 +19,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
+
 $current = __DIR__;
 
 $paths = [
@@ -27,7 +29,7 @@ $paths = [
     $current . '/../../database',
     $current . '/../../routes',
     $current . '/../../tests',
-    $current . '/../../resources/lang',
+    $current . '/../../resources/lang/en_US',
 ];
 
 $finder = PhpCsFixer\Finder::create()
@@ -35,6 +37,7 @@ $finder = PhpCsFixer\Finder::create()
 
 
 $config = new PhpCsFixer\Config();
+$config->setParallelConfig(ParallelConfigFactory::detect());
 return $config->setRules(
     [
         // rule sets

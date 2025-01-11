@@ -25,6 +25,13 @@
 declare(strict_types=1);
 
 return [
+    'invalid_account_type'            => 'A piggy bank can only be linked to asset accounts and liabilities',
+    'invalid_account_currency'        => 'This account does not use the currency you have selected',
+    'current_amount_too_much'         => 'The combined amount in "current_amount" cannot exceed the "target_amount".',
+    'filter_must_be_in'               => 'Filter ":filter" must be one of: :values',
+    'filter_not_string'               => 'Filter ":filter" is expected to be a string of text',
+    'bad_api_filter'                  => 'This API endpoint does not support ":filter" as a filter.',
+    'nog_logged_in'                   => 'You are not logged in.',
     'bad_type_source'                 => 'Firefly III can\'t determine the transaction type based on this source account.',
     'bad_type_destination'            => 'Firefly III can\'t determine the transaction type based on this destination account.',
     'missing_where'                   => 'Array is missing "where"-clause',
@@ -59,7 +66,7 @@ return [
     'invalid_selection'               => 'Your selection is invalid.',
     'belongs_user'                    => 'This value is linked to an object that does not seem to exist.',
     'belongs_user_or_user_group'      => 'This value is linked to an object that does not seem to exist in your current financial administration.',
-    'no_access_group'                 => 'The user has no access to this user group.',
+    'no_access_group'                 => 'The user has no access to this administration.',
     'no_accepted_roles_defined'       => 'No access roles have been defined for this endpoint, access denied.',
     'at_least_one_transaction'        => 'Need at least one transaction.',
     'recurring_transaction_id'        => 'Need at least one transaction.',
@@ -258,6 +265,7 @@ return [
     'gte.file'                        => 'The :attribute must be greater than or equal to :value kilobytes.',
     'gte.string'                      => 'The :attribute must be greater than or equal to :value characters.',
     'gte.array'                       => 'The :attribute must have :value items or more.',
+    'missing_with'                    => 'The :attribute cannot be combined with another field.',
 
     'amount_required_for_auto_budget' => 'The amount is required.',
     'auto_budget_amount_positive'     => 'The amount must be more than zero.',
@@ -265,8 +273,10 @@ return [
     'auto_budget_period_mandatory'    => 'The auto budget period is a mandatory field.',
 
     // no access to administration:
+    'no_auth_user_group'              => 'You have to be logged in to access this administration.',
     'no_access_user_group'            => 'You do not have the correct access rights for this administration.',
     'administration_owner_rename'     => 'You can\'t rename your standard administration.',
+    'existing_mfa_code'               => 'Please enter a valid code',
 ];
 
 // Ignore this comment

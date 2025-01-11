@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionTypeRepository.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -62,6 +63,6 @@ class TransactionTypeRepository implements TransactionTypeRepositoryInterface
             return TransactionType::get();
         }
 
-        return TransactionType::where('type', 'LIKE', sprintf('%%%s%%', $query))->take($limit)->get();
+        return TransactionType::whereLike('type', sprintf('%%%s%%', $query))->take($limit)->get();
     }
 }
