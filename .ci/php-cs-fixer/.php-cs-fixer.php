@@ -19,6 +19,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
+
 $current = __DIR__;
 
 $paths = [
@@ -27,7 +29,7 @@ $paths = [
     $current . '/../../database',
     $current . '/../../routes',
     $current . '/../../tests',
-    $current . '/../../resources/lang',
+    $current . '/../../resources/lang/en_US',
 ];
 
 $finder = PhpCsFixer\Finder::create()
@@ -35,6 +37,7 @@ $finder = PhpCsFixer\Finder::create()
 
 
 $config = new PhpCsFixer\Config();
+$config->setParallelConfig(ParallelConfigFactory::detect());
 return $config->setRules(
     [
         // rule sets
@@ -58,6 +61,7 @@ return $config->setRules(
         'comment_to_phpdoc'             => false, // breaks phpstan lines in combination with PHPStorm.
         'type_declaration_spaces'       => false,
         'cast_spaces'                   => false,
+        'phpdoc_to_comment' => false, // do not overrule single line comment style, breaks phpstan.
 
         // complex rules
         'array_syntax'                  => ['syntax' => 'short'],

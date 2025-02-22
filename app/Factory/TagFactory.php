@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TagFactory.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -25,6 +26,7 @@ namespace FireflyIII\Factory;
 
 use FireflyIII\Models\Location;
 use FireflyIII\Models\Tag;
+use FireflyIII\Models\UserGroup;
 use FireflyIII\User;
 
 /**
@@ -33,6 +35,7 @@ use FireflyIII\User;
 class TagFactory
 {
     private User $user;
+    private UserGroup $userGroup;
 
     public function findOrCreate(string $tag): ?Tag
     {
@@ -68,12 +71,12 @@ class TagFactory
 
     public function create(array $data): ?Tag
     {
-        $zoomLevel = 0 === (int)$data['zoom_level'] ? null : (int)$data['zoom_level'];
-        $latitude  = 0.0 === (float)$data['latitude'] ? null : (float)$data['latitude'];   // intentional float
-        $longitude = 0.0 === (float)$data['longitude'] ? null : (float)$data['longitude']; // intentional float
+        $zoomLevel = 0 === (int) $data['zoom_level'] ? null : (int) $data['zoom_level'];
+        $latitude  = 0.0 === (float) $data['latitude'] ? null : (float) $data['latitude'];   // intentional float
+        $longitude = 0.0 === (float) $data['longitude'] ? null : (float) $data['longitude']; // intentional float
         $array     = [
             'user_id'       => $this->user->id,
-            'user_group_id' => $this->user->user_group_id,
+            'user_group_id' => $this->userGroup->id,
             'tag'           => trim($data['tag']),
             'tagMode'       => 'nothing',
             'date'          => $data['date'],
@@ -100,6 +103,12 @@ class TagFactory
 
     public function setUser(User $user): void
     {
-        $this->user = $user;
+        $this->user      = $user;
+        $this->userGroup = $user->userGroup;
+    }
+
+    public function setUserGroup(UserGroup $userGroup): void
+    {
+        $this->userGroup = $userGroup;
     }
 }

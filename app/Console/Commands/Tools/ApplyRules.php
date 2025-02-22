@@ -1,4 +1,5 @@
 <?php
+
 /*
  * ApplyRules.php
  * Copyright (c) 2024 james@firefly-iii.org.
@@ -26,8 +27,8 @@ namespace FireflyIII\Console\Commands\Tools;
 use Carbon\Carbon;
 use FireflyIII\Console\Commands\ShowsFriendlyMessages;
 use FireflyIII\Console\Commands\VerifiesAccessToken;
+use FireflyIII\Enums\AccountTypeEnum;
 use FireflyIII\Exceptions\FireflyException;
-use FireflyIII\Models\AccountType;
 use FireflyIII\Models\Rule;
 use FireflyIII\Models\RuleGroup;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
@@ -39,9 +40,6 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Class ApplyRules
- */
 class ApplyRules extends Command
 {
     use ShowsFriendlyMessages;
@@ -156,7 +154,7 @@ class ApplyRules extends Command
         $this->ruleGroupSelection  = [];
         $this->ruleRepository      = app(RuleRepositoryInterface::class);
         $this->ruleGroupRepository = app(RuleGroupRepositoryInterface::class);
-        $this->acceptedAccounts    = [AccountType::DEFAULT, AccountType::DEBT, AccountType::ASSET, AccountType::LOAN, AccountType::MORTGAGE];
+        $this->acceptedAccounts    = [AccountTypeEnum::DEFAULT->value, AccountTypeEnum::DEBT->value, AccountTypeEnum::ASSET->value, AccountTypeEnum::LOAN->value, AccountTypeEnum::MORTGAGE->value];
         $this->groups              = new Collection();
     }
 
@@ -200,7 +198,7 @@ class ApplyRules extends Command
         $accountRepository = app(AccountRepositoryInterface::class);
         $accountRepository->setUser($this->getUser());
         foreach ($accountList as $accountId) {
-            $accountId = (int)$accountId;
+            $accountId = (int) $accountId;
             $account   = $accountRepository->find($accountId);
             if (null !== $account && in_array($account->accountType->type, $this->acceptedAccounts, true)) {
                 $finalList->push($account);
@@ -227,8 +225,8 @@ class ApplyRules extends Command
         $ruleGroupList   = explode(',', $ruleGroupString);
 
         foreach ($ruleGroupList as $ruleGroupId) {
-            $ruleGroup = $this->ruleGroupRepository->find((int)$ruleGroupId);
-            if ($ruleGroup->active) {
+            $ruleGroup = $this->ruleGroupRepository->find((int) $ruleGroupId);
+            if (true === $ruleGroup->active) {
                 $this->ruleGroupSelection[] = $ruleGroup->id;
             }
             if (false === $ruleGroup->active) {
@@ -249,8 +247,8 @@ class ApplyRules extends Command
         $ruleList   = explode(',', $ruleString);
 
         foreach ($ruleList as $ruleId) {
-            $rule = $this->ruleRepository->find((int)$ruleId);
-            if (null !== $rule && $rule->active) {
+            $rule = $this->ruleRepository->find((int) $ruleId);
+            if (null !== $rule && true === $rule->active) {
                 $this->ruleSelection[] = $rule->id;
             }
         }

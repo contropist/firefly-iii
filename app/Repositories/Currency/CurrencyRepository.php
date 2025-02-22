@@ -26,6 +26,7 @@ namespace FireflyIII\Repositories\Currency;
 use Carbon\Carbon;
 use FireflyIII\Models\CurrencyExchangeRate;
 use FireflyIII\Models\TransactionCurrency;
+use FireflyIII\Models\UserGroup;
 use FireflyIII\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
@@ -36,6 +37,13 @@ use Illuminate\Support\Collection;
 class CurrencyRepository implements CurrencyRepositoryInterface
 {
     private User $user;
+    private UserGroup $userGroup;
+
+    #[\Override]
+    public function find(int $currencyId): ?TransactionCurrency
+    {
+        return TransactionCurrency::find($currencyId);
+    }
 
     /**
      * Find by currency code, return NULL if unfound.
@@ -51,7 +59,7 @@ class CurrencyRepository implements CurrencyRepositoryInterface
      */
     public function getCompleteSet(): Collection
     {
-        return TransactionCurrency::orderBy('code', 'ASC')->get();
+        return TransactionCurrency::where('enabled', true)->orderBy('code', 'ASC')->get();
     }
 
     /**
@@ -90,9 +98,11 @@ class CurrencyRepository implements CurrencyRepositoryInterface
         return CurrencyExchangeRate::create(
             [
                 'user_id'          => $this->user->id,
+                'user_group_id'    => $this->user->user_group_id,
                 'from_currency_id' => $fromCurrency->id,
                 'to_currency_id'   => $toCurrency->id,
                 'date'             => $date,
+                'date_tz'          => $date->format('e'),
                 'rate'             => $rate,
             ]
         );
@@ -101,7 +111,14 @@ class CurrencyRepository implements CurrencyRepositoryInterface
     public function setUser(null|Authenticatable|User $user): void
     {
         if ($user instanceof User) {
-            $this->user = $user;
+            $this->user      = $user;
+            $this->userGroup = $user->userGroup;
         }
+    }
+
+    #[\Override]
+    public function setUserGroup(UserGroup $userGroup): void
+    {
+        $this->userGroup = $userGroup;
     }
 }

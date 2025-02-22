@@ -49,15 +49,15 @@ class BelongsUser implements ValidationRule
         app('log')->debug(sprintf('Going to validate %s', $attribute));
 
         $result    = match ($attribute) {
-            'piggy_bank_id'               => $this->validatePiggyBankId((int)$value),
+            'piggy_bank_id'               => $this->validatePiggyBankId((int) $value),
             'piggy_bank_name'             => $this->validatePiggyBankName($value),
-            'bill_id'                     => $this->validateBillId((int)$value),
-            'transaction_journal_id'      => $this->validateJournalId((int)$value),
+            'bill_id'                     => $this->validateBillId((int) $value),
+            'transaction_journal_id'      => $this->validateJournalId((int) $value),
             'bill_name'                   => $this->validateBillName($value),
-            'budget_id'                   => $this->validateBudgetId((int)$value),
-            'category_id'                 => $this->validateCategoryId((int)$value),
+            'budget_id'                   => $this->validateBudgetId((int) $value),
+            'category_id'                 => $this->validateCategoryId((int) $value),
             'budget_name'                 => $this->validateBudgetName($value),
-            'source_id', 'destination_id' => $this->validateAccountId((int)$value),
+            'source_id', 'destination_id' => $this->validateAccountId((int) $value),
             default                       => throw new FireflyException(sprintf('Rule BelongsUser cannot handle "%s"', $attribute)),
         };
         if (false === $result) {
@@ -80,19 +80,28 @@ class BelongsUser implements ValidationRule
 
     private function validatePiggyBankId(int $value): bool
     {
-        $count = PiggyBank::leftJoin('accounts', 'accounts.id', '=', 'piggy_banks.account_id')
+
+
+
+
+        $count = PiggyBank::leftJoin('account_piggy_bank', 'account_piggy_bank.piggy_bank_id', '=', 'piggy_banks.id')
+            ->leftJoin('accounts', 'accounts.id', '=', 'account_piggy_bank.account_id')
             ->where('piggy_banks.id', '=', $value)
             ->where('accounts.user_id', '=', auth()->user()->id)->count()
         ;
 
-        return 1 === $count;
+        return $count > 0;
     }
 
     private function validatePiggyBankName(string $value): bool
     {
-        $count = $this->countField(PiggyBank::class, 'name', $value);
+        $count = PiggyBank::leftJoin('account_piggy_bank', 'account_piggy_bank.piggy_bank_id', '=', 'piggy_banks.id')
+            ->leftJoin('accounts', 'accounts.id', '=', 'account_piggy_bank.account_id')
+            ->where('piggy_banks.name', '=', $value)
+            ->where('accounts.user_id', '=', auth()->user()->id)->count()
+        ;
 
-        return 1 === $count;
+        return $count > 0;
     }
 
     protected function countField(string $class, string $field, string $value): int
@@ -110,7 +119,7 @@ class BelongsUser implements ValidationRule
         }
         $count   = 0;
         foreach ($objects as $object) {
-            $objectValue = trim((string)$object->{$field}); // @phpstan-ignore-line
+            $objectValue = trim((string) $object->{$field}); // @phpstan-ignore-line
             app('log')->debug(sprintf('Comparing object "%s" with value "%s"', $objectValue, $value));
             if ($objectValue === $value) {
                 ++$count;

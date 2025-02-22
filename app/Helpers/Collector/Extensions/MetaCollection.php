@@ -167,6 +167,7 @@ trait MetaCollection
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'external_id');
         $this->query->where('journal_meta.data', '!=', sprintf('%s', json_encode($externalId)));
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
@@ -195,12 +196,12 @@ trait MetaCollection
 
     public function excludeInternalReference(string $internalReference): GroupCollectorInterface
     {
-        $internalReference = (string)json_encode($internalReference);
+        $internalReference = (string) json_encode($internalReference);
         $internalReference = str_replace('\\', '\\\\', trim($internalReference, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'internal_reference');
-        $this->query->where('journal_meta.data', 'NOT LIKE', sprintf('%%%s%%', $internalReference));
+        $this->query->whereNotLike('journal_meta.data', sprintf('%%%s%%', $internalReference));
 
         return $this;
     }
@@ -216,72 +217,72 @@ trait MetaCollection
 
     public function externalIdContains(string $externalId): GroupCollectorInterface
     {
-        $externalId = (string)json_encode($externalId);
+        $externalId = (string) json_encode($externalId);
         $externalId = str_replace('\\', '\\\\', trim($externalId, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'external_id');
-        $this->query->where('journal_meta.data', 'LIKE', sprintf('%%%s%%', $externalId));
+        $this->query->whereLike('journal_meta.data', sprintf('%%%s%%', $externalId));
 
         return $this;
     }
 
     public function externalIdDoesNotContain(string $externalId): GroupCollectorInterface
     {
-        $externalId = (string)json_encode($externalId);
+        $externalId = (string) json_encode($externalId);
         $externalId = str_replace('\\', '\\\\', trim($externalId, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'external_id');
-        $this->query->where('journal_meta.data', 'NOT LIKE', sprintf('%%%s%%', $externalId));
+        $this->query->whereNotLike('journal_meta.data', sprintf('%%%s%%', $externalId));
 
         return $this;
     }
 
     public function externalIdDoesNotEnd(string $externalId): GroupCollectorInterface
     {
-        $externalId = (string)json_encode($externalId);
+        $externalId = (string) json_encode($externalId);
         $externalId = str_replace('\\', '\\\\', trim($externalId, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'external_id');
-        $this->query->where('journal_meta.data', 'NOT LIKE', sprintf('%%%s"', $externalId));
+        $this->query->whereNotLike('journal_meta.data', sprintf('%%%s"', $externalId));
 
         return $this;
     }
 
     public function externalIdDoesNotStart(string $externalId): GroupCollectorInterface
     {
-        $externalId = (string)json_encode($externalId);
+        $externalId = (string) json_encode($externalId);
         $externalId = str_replace('\\', '\\\\', trim($externalId, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'external_id');
-        $this->query->where('journal_meta.data', 'LIKE', sprintf('"%s%%', $externalId));
+        $this->query->whereLike('journal_meta.data', sprintf('"%s%%', $externalId));
 
         return $this;
     }
 
     public function externalIdEnds(string $externalId): GroupCollectorInterface
     {
-        $externalId = (string)json_encode($externalId);
+        $externalId = (string) json_encode($externalId);
         $externalId = str_replace('\\', '\\\\', trim($externalId, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'external_id');
-        $this->query->where('journal_meta.data', 'LIKE', sprintf('%%%s"', $externalId));
+        $this->query->whereLike('journal_meta.data', sprintf('%%%s"', $externalId));
 
         return $this;
     }
 
     public function externalIdStarts(string $externalId): GroupCollectorInterface
     {
-        $externalId = (string)json_encode($externalId);
+        $externalId = (string) json_encode($externalId);
         $externalId = str_replace('\\', '\\\\', trim($externalId, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'external_id');
-        $this->query->where('journal_meta.data', 'LIKE', sprintf('"%s%%', $externalId));
+        $this->query->whereLike('journal_meta.data', sprintf('"%s%%', $externalId));
 
         return $this;
     }
@@ -289,10 +290,10 @@ trait MetaCollection
     public function externalUrlContains(string $url): GroupCollectorInterface
     {
         $this->joinMetaDataTables();
-        $url = (string)json_encode($url);
+        $url = (string) json_encode($url);
         $url = str_replace('\\', '\\\\', trim($url, '"'));
         $this->query->where('journal_meta.name', '=', 'external_url');
-        $this->query->where('journal_meta.data', 'LIKE', sprintf('%%%s%%', $url));
+        $this->query->whereLike('journal_meta.data', sprintf('%%%s%%', $url));
 
         return $this;
     }
@@ -300,10 +301,10 @@ trait MetaCollection
     public function externalUrlDoesNotContain(string $url): GroupCollectorInterface
     {
         $this->joinMetaDataTables();
-        $url = (string)json_encode($url);
+        $url = (string) json_encode($url);
         $url = str_replace('\\', '\\\\', trim($url, '"'));
         $this->query->where('journal_meta.name', '=', 'external_url');
-        $this->query->where('journal_meta.data', 'NOT LIKE', sprintf('%%%s%%', $url));
+        $this->query->whereNotLike('journal_meta.data', sprintf('%%%s%%', $url));
 
         return $this;
     }
@@ -311,10 +312,10 @@ trait MetaCollection
     public function externalUrlDoesNotEnd(string $url): GroupCollectorInterface
     {
         $this->joinMetaDataTables();
-        $url = (string)json_encode($url);
+        $url = (string) json_encode($url);
         $url = str_replace('\\', '\\\\', ltrim($url, '"'));
         $this->query->where('journal_meta.name', '=', 'external_url');
-        $this->query->where('journal_meta.data', 'NOT LIKE', sprintf('%%%s', $url));
+        $this->query->whereNotLike('journal_meta.data', sprintf('%%%s', $url));
 
         return $this;
     }
@@ -322,12 +323,12 @@ trait MetaCollection
     public function externalUrlDoesNotStart(string $url): GroupCollectorInterface
     {
         $this->joinMetaDataTables();
-        $url = (string)json_encode($url);
+        $url = (string) json_encode($url);
         $url = str_replace('\\', '\\\\', rtrim($url, '"'));
         // var_dump($url);
 
         $this->query->where('journal_meta.name', '=', 'external_url');
-        $this->query->where('journal_meta.data', 'NOT LIKE', sprintf('%s%%', $url));
+        $this->query->whereNotLike('journal_meta.data', sprintf('%s%%', $url));
 
         return $this;
     }
@@ -335,10 +336,10 @@ trait MetaCollection
     public function externalUrlEnds(string $url): GroupCollectorInterface
     {
         $this->joinMetaDataTables();
-        $url = (string)json_encode($url);
+        $url = (string) json_encode($url);
         $url = str_replace('\\', '\\\\', ltrim($url, '"'));
         $this->query->where('journal_meta.name', '=', 'external_url');
-        $this->query->where('journal_meta.data', 'LIKE', sprintf('%%%s', $url));
+        $this->query->whereLike('journal_meta.data', sprintf('%%%s', $url));
 
         return $this;
     }
@@ -346,12 +347,12 @@ trait MetaCollection
     public function externalUrlStarts(string $url): GroupCollectorInterface
     {
         $this->joinMetaDataTables();
-        $url = (string)json_encode($url);
+        $url = (string) json_encode($url);
         $url = str_replace('\\', '\\\\', rtrim($url, '"'));
         // var_dump($url);
 
         $this->query->where('journal_meta.name', '=', 'external_url');
-        $this->query->where('journal_meta.data', 'LIKE', sprintf('%s%%', $url));
+        $this->query->whereLike('journal_meta.data', sprintf('%s%%', $url));
 
         return $this;
     }
@@ -397,74 +398,80 @@ trait MetaCollection
 
     public function internalReferenceContains(string $internalReference): GroupCollectorInterface
     {
-        $internalReference = (string)json_encode($internalReference);
+        $internalReference = (string) json_encode($internalReference);
         $internalReference = str_replace('\\', '\\\\', trim($internalReference, '"'));
         // var_dump($internalReference);
         // exit;
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'internal_reference');
-        $this->query->where('journal_meta.data', 'LIKE', sprintf('%%%s%%', $internalReference));
+        $this->query->whereLike('journal_meta.data', sprintf('%%%s%%', $internalReference));
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
 
     public function internalReferenceDoesNotContain(string $internalReference): GroupCollectorInterface
     {
-        $internalReference = (string)json_encode($internalReference);
+        $internalReference = (string) json_encode($internalReference);
         $internalReference = str_replace('\\', '\\\\', trim($internalReference, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'internal_reference');
-        $this->query->where('journal_meta.data', 'NOT LIKE', sprintf('%%%s%%', $internalReference));
+        $this->query->whereNotLike('journal_meta.data', sprintf('%%%s%%', $internalReference));
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
 
     public function internalReferenceDoesNotEnd(string $internalReference): GroupCollectorInterface
     {
-        $internalReference = (string)json_encode($internalReference);
+        $internalReference = (string) json_encode($internalReference);
         $internalReference = str_replace('\\', '\\\\', trim($internalReference, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'internal_reference');
-        $this->query->where('journal_meta.data', 'NOT LIKE', sprintf('%%%s"', $internalReference));
+        $this->query->whereNotLike('journal_meta.data', sprintf('%%%s"', $internalReference));
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
 
     public function internalReferenceDoesNotStart(string $internalReference): GroupCollectorInterface
     {
-        $internalReference = (string)json_encode($internalReference);
+        $internalReference = (string) json_encode($internalReference);
         $internalReference = str_replace('\\', '\\\\', trim($internalReference, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'internal_reference');
-        $this->query->where('journal_meta.data', 'LIKE', sprintf('"%s%%', $internalReference));
+        $this->query->whereLike('journal_meta.data', sprintf('"%s%%', $internalReference));
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
 
     public function internalReferenceEnds(string $internalReference): GroupCollectorInterface
     {
-        $internalReference = (string)json_encode($internalReference);
+        $internalReference = (string) json_encode($internalReference);
         $internalReference = str_replace('\\', '\\\\', trim($internalReference, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'internal_reference');
-        $this->query->where('journal_meta.data', 'LIKE', sprintf('%%%s"', $internalReference));
+        $this->query->whereLike('journal_meta.data', sprintf('%%%s"', $internalReference));
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
 
     public function internalReferenceStarts(string $internalReference): GroupCollectorInterface
     {
-        $internalReference = (string)json_encode($internalReference);
+        $internalReference = (string) json_encode($internalReference);
         $internalReference = str_replace('\\', '\\\\', trim($internalReference, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'internal_reference');
-        $this->query->where('journal_meta.data', 'LIKE', sprintf('"%s%%', $internalReference));
+        $this->query->whereLike('journal_meta.data', sprintf('"%s%%', $internalReference));
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
@@ -472,7 +479,7 @@ trait MetaCollection
     public function notesContain(string $value): GroupCollectorInterface
     {
         $this->withNotes();
-        $this->query->where('notes.text', 'LIKE', sprintf('%%%s%%', $value));
+        $this->query->whereLike('notes.text', sprintf('%%%s%%', $value));
 
         return $this;
     }
@@ -502,7 +509,7 @@ trait MetaCollection
         $this->withNotes();
         $this->query->where(static function (Builder $q) use ($value): void { // @phpstan-ignore-line
             $q->whereNull('notes.text');
-            $q->orWhere('notes.text', 'NOT LIKE', sprintf('%%%s%%', $value));
+            $q->orWhereNotLike('notes.text', sprintf('%%%s%%', $value));
         });
 
         return $this;
@@ -513,7 +520,7 @@ trait MetaCollection
         $this->withNotes();
         $this->query->where(static function (Builder $q) use ($value): void { // @phpstan-ignore-line
             $q->whereNull('notes.text');
-            $q->orWhere('notes.text', 'NOT LIKE', sprintf('%%%s', $value));
+            $q->orWhereNotLike('notes.text', sprintf('%%%s', $value));
         });
 
         return $this;
@@ -524,7 +531,7 @@ trait MetaCollection
         $this->withNotes();
         $this->query->where(static function (Builder $q) use ($value): void { // @phpstan-ignore-line
             $q->whereNull('notes.text');
-            $q->orWhere('notes.text', 'NOT LIKE', sprintf('%s%%', $value));
+            $q->orWhereNotLike('notes.text', sprintf('%s%%', $value));
         });
 
         return $this;
@@ -533,7 +540,7 @@ trait MetaCollection
     public function notesEndWith(string $value): GroupCollectorInterface
     {
         $this->withNotes();
-        $this->query->where('notes.text', 'LIKE', sprintf('%%%s', $value));
+        $this->query->whereLike('notes.text', sprintf('%%%s', $value));
 
         return $this;
     }
@@ -560,7 +567,7 @@ trait MetaCollection
     public function notesStartWith(string $value): GroupCollectorInterface
     {
         $this->withNotes();
-        $this->query->where('notes.text', 'LIKE', sprintf('%s%%', $value));
+        $this->query->whereLike('notes.text', sprintf('%s%%', $value));
 
         return $this;
     }
@@ -697,6 +704,7 @@ trait MetaCollection
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'external_id');
         $this->query->where('journal_meta.data', '=', sprintf('%s', json_encode($externalId)));
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
@@ -706,18 +714,20 @@ trait MetaCollection
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'external_url');
         $this->query->where('journal_meta.data', '=', json_encode($url));
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
 
     public function setInternalReference(string $internalReference): GroupCollectorInterface
     {
-        $internalReference = (string)json_encode($internalReference);
+        $internalReference = (string) json_encode($internalReference);
         $internalReference = str_replace('\\', '\\\\', trim($internalReference, '"'));
 
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'internal_reference');
-        $this->query->where('journal_meta.data', 'LIKE', sprintf('%%%s%%', $internalReference));
+        $this->query->where('journal_meta.data', '=', sprintf('%s', json_encode($internalReference)));
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
@@ -727,6 +737,7 @@ trait MetaCollection
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'recurrence_id');
         $this->query->where('journal_meta.data', '=', sprintf('%s', json_encode($recurringId)));
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
@@ -862,6 +873,7 @@ trait MetaCollection
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'external_id');
         $this->query->whereNotNull('journal_meta.data');
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
@@ -871,6 +883,7 @@ trait MetaCollection
         $this->joinMetaDataTables();
         $this->query->where('journal_meta.name', '=', 'external_url');
         $this->query->whereNotNull('journal_meta.data');
+        $this->query->whereNull('journal_meta.deleted_at');
 
         return $this;
     }
@@ -915,10 +928,13 @@ trait MetaCollection
             $q1->where(static function (Builder $q2): void {
                 $q2->where('journal_meta.name', '=', 'external_id');
                 $q2->whereNull('journal_meta.data');
+                $q2->whereNull('journal_meta.deleted_at');
             })->orWhere(static function (Builder $q3): void {
                 $q3->where('journal_meta.name', '!=', 'external_id');
+                $q3->whereNull('journal_meta.deleted_at');
             })->orWhere(static function (Builder $q4): void {
                 $q4->whereNull('journal_meta.name');
+                $q4->whereNull('journal_meta.deleted_at');
             });
         });
 
@@ -933,10 +949,13 @@ trait MetaCollection
             $q1->where(static function (Builder $q2): void {
                 $q2->where('journal_meta.name', '=', 'external_url');
                 $q2->whereNull('journal_meta.data');
+                $q2->whereNull('journal_meta.deleted_at');
             })->orWhere(static function (Builder $q3): void {
                 $q3->where('journal_meta.name', '!=', 'external_url');
+                $q3->whereNull('journal_meta.deleted_at');
             })->orWhere(static function (Builder $q4): void {
                 $q4->whereNull('journal_meta.name');
+                $q4->whereNull('journal_meta.deleted_at');
             });
         });
 

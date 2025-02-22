@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Models\TransactionType;
 use Illuminate\Database\Seeder;
 
@@ -34,20 +35,22 @@ class TransactionTypeSeeder extends Seeder
     public function run(): void
     {
         $types = [
-            TransactionType::WITHDRAWAL,
-            TransactionType::DEPOSIT,
-            TransactionType::TRANSFER,
-            TransactionType::OPENING_BALANCE,
-            TransactionType::RECONCILIATION,
-            TransactionType::INVALID,
-            TransactionType::LIABILITY_CREDIT,
+            TransactionTypeEnum::WITHDRAWAL->value,
+            TransactionTypeEnum::DEPOSIT->value,
+            TransactionTypeEnum::TRANSFER->value,
+            TransactionTypeEnum::OPENING_BALANCE->value,
+            TransactionTypeEnum::RECONCILIATION->value,
+            TransactionTypeEnum::INVALID->value,
+            TransactionTypeEnum::LIABILITY_CREDIT->value,
         ];
 
         foreach ($types as $type) {
-            try {
-                TransactionType::create(['type' => $type]);
-            } catch (\PDOException $e) {
-                // @ignoreException
+            if (null === TransactionType::where('type', $type)->first()) {
+                try {
+                    TransactionType::create(['type' => $type]);
+                } catch (\PDOException $e) {
+                    // @ignoreException
+                }
             }
         }
     }

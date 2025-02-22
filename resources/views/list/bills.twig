@@ -31,17 +31,17 @@
                         <span class="fa fa-fw fa-bars bill-handle"></span>
                     </td>
                     <td class="hidden-sm hidden-xs">
-                        <div class="btn-group btn-group-xs edit_tr_buttons"><a href="{{ route('bills.edit',entry.id) }}"
+                        <div class="btn-group btn-group-xs edit_tr_buttons"><a href="{{ route('subscriptions.edit',entry.id) }}"
                                                                                class="btn btn-default btn-xs"><span
                                         class="fa fa-fw fa-pencil"></span></a><a
-                                    href="{{ route('bills.delete',entry.id) }}" class="btn btn-danger btn-xs"><span
+                                    href="{{ route('subscriptions.delete',entry.id) }}" class="btn btn-danger btn-xs"><span
                                         class="fa fa-fw fa-trash-o"></span></a></div>
                     </td>
                     <td>
                         {% if not entry.active %}
                             <span class="fa fa-fw fa-ban"></span>
                         {% endif %}
-                        <a href="{{ route('bills.show',entry.id) }}" title="{{ entry.name }}">{{ entry.name }}</a>
+                        <a href="{{ route('subscriptions.show',entry.id) }}" title="{{ entry.name }}">{{ entry.name }}</a>
                         {# count attachments #}
                         {% if entry.attachments.count() > 0 %}
                             <span class="fa fa-paperclip"></span>
@@ -67,6 +67,10 @@
                       title="{{ formatAmountBySymbol(entry.amount_min, entry.currency_symbol, entry.currency_decimal_places, false)|escape }} -- {{ formatAmountBySymbol(entry.amount_max, entry.currency_symbol, entry.currency_decimal_places, false)|escape }}"
                 >
                     ~ {{ formatAmountBySymbol((entry.amount_max + entry.amount_min)/2, entry.currency_symbol, entry.currency_decimal_places) }}
+
+                    {% if '0' != entry.native_amount_max %}
+                    (~ {{ formatAmountBySymbol((entry.native_amount_max + entry.native_amount_min)/2, defaultCurrency.symbol, defaultCurrency.decimal_places) }})
+                    {% endif %}
                 </span>
                     </td>
 
@@ -93,11 +97,18 @@
                     first pay date is in the past.
                     #}
                     {% if entry.paid_dates|length == 0 and entry.pay_dates|length > 0 and entry.active %}
-                        <td class="paid_in_period text-warning">
-                            {{ entry.next_expected_match_diff }}
-                            <!-- {{ trans('firefly.bill_expected_date', {date: entry.next_expected_match_diff }) }} -->
-                        </td>
+                        {% if entry.next_expected_match_diff == trans('firefly.not_expected_period') %} {# terrible code, you should sue me for this. #}
+                            <td class="paid_in_period text-muted">
+                                {{ entry.next_expected_match_diff }}
+                            </td>
+                        {% else %}
+                            <td class="paid_in_period text-warning">
+                                {{ entry.next_expected_match_diff }}
+                                <!-- {{ trans('firefly.bill_expected_date', {date: entry.next_expected_match_diff }) }} -->
+                            </td>
+                        {% endif %}
                         <td class="expected_in_period hidden-sm hidden-xs">
+
                             {% for date in entry.pay_dates %}
                                 {{ formatDate(date, monthAndDayFormat) }}<br>
                             {% endfor %}
@@ -111,6 +122,7 @@
                     #}
                     {% if entry.paid_dates|length > 0 and entry.active %}
                         <td class="paid_in_period text-success">
+
                             {% for currentPaid in entry.paid_dates %}
                                 <a href="{{ route('transactions.show',currentPaid.transaction_group_id) }}">
                                     {{ formatDate(currentPaid.date, monthAndDayFormat) }}
@@ -120,7 +132,9 @@
                         </td>
                         <td class="expected_in_period hidden-sm hidden-xs">
                             {% if entry.next_expected_match %}
-                                {{ formatDate(entry.next_expected_match, monthAndDayFormat) }}
+                                    {{ formatDate(entry.next_expected_match, monthAndDayFormat) }}
+                                {% else %}
+                                    <span class="text-muted">{{ entry.next_expected_match_diff }}</span>
                             {% endif %}
                         </td>
                     {% endif %}

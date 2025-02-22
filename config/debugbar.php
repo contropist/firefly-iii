@@ -1,5 +1,26 @@
 <?php
 
+
+/*
+ * debugbar.php
+ * Copyright (c) 2025 james@firefly-iii.org.
+ *
+ * This file is part of Firefly III (https://github.com/firefly-iii).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see https://www.gnu.org/licenses/.
+ */
+
 declare(strict_types=1);
 
 return [
@@ -62,7 +83,7 @@ return [
     |
     */
 
-    'editor'                  => env('DEBUGBAR_EDITOR') ?: env('IGNITION_EDITOR', 'phpstorm'),
+    'editor'                  => env('DEBUGBAR_EDITOR') ?? env('IGNITION_EDITOR', 'phpstorm'),
 
     /*
     |--------------------------------------------------------------------------
@@ -225,7 +246,7 @@ return [
             'show_copy'               => false,    // Show copy button next to the query,
             'slow_threshold'          => false,   // Only track queries that last longer than this time in ms
             'memory_usage'            => false,   // Show queries memory usage
-            'soft_limit'              => 100,      // After the soft limit, no parameters/backtrace are captured
+            'soft_limit'              => 250,      // After the soft limit, no parameters/backtrace are captured
             'hard_limit'              => 500,      // After the hard limit, queries are ignored
         ],
         'mail'            => [

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AugumentData.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -24,12 +25,12 @@ declare(strict_types=1);
 namespace FireflyIII\Support\Http\Controllers;
 
 use Carbon\Carbon;
+use FireflyIII\Enums\AccountTypeEnum;
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Helpers\Collector\GroupCollectorInterface;
 use FireflyIII\Models\Account;
-use FireflyIII\Models\AccountType;
 use FireflyIII\Models\Budget;
 use FireflyIII\Models\BudgetLimit;
-use FireflyIII\Models\TransactionType;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Repositories\Budget\BudgetLimitRepositoryInterface;
 use FireflyIII\Repositories\Budget\BudgetRepositoryInterface;
@@ -57,7 +58,7 @@ trait AugumentData
             $collection                      = new Collection();
             $collection->push($expenseAccount);
 
-            $revenue                         = $repository->findByName($expenseAccount->name, [AccountType::REVENUE]);
+            $revenue                         = $repository->findByName($expenseAccount->name, [AccountTypeEnum::REVENUE->value]);
             if (null !== $revenue) {
                 $collection->push($revenue);
             }
@@ -104,12 +105,12 @@ trait AugumentData
     {
         /** @var AccountRepositoryInterface $repository */
         $repository = app(AccountRepositoryInterface::class);
-        $accounts   = $repository->getAccountsByType([AccountType::ASSET, AccountType::DEFAULT, AccountType::EXPENSE, AccountType::CASH]);
+        $accounts   = $repository->getAccountsByType([AccountTypeEnum::ASSET->value, AccountTypeEnum::DEFAULT->value, AccountTypeEnum::EXPENSE->value, AccountTypeEnum::CASH->value]);
         $grouped    = $accounts->groupBy('id')->toArray();
         $return     = [];
         foreach ($accountIds as $combinedId) {
             $parts     = explode('-', $combinedId);
-            $accountId = (int)$parts[0];
+            $accountId = (int) $parts[0];
             if (array_key_exists($accountId, $grouped)) {
                 $return[$accountId] = $grouped[$accountId][0]['name'];
             }
@@ -134,7 +135,7 @@ trait AugumentData
                 $return[$budgetId] = $grouped[$budgetId][0]['name'];
             }
         }
-        $return[0]  = (string)trans('firefly.no_budget');
+        $return[0]  = (string) trans('firefly.no_budget');
 
         return $return;
     }
@@ -151,12 +152,12 @@ trait AugumentData
         $return     = [];
         foreach ($categoryIds as $combinedId) {
             $parts      = explode('-', $combinedId);
-            $categoryId = (int)$parts[0];
+            $categoryId = (int) $parts[0];
             if (array_key_exists($categoryId, $grouped)) {
                 $return[$categoryId] = $grouped[$categoryId][0]['name'];
             }
         }
-        $return[0]  = (string)trans('firefly.no_category');
+        $return[0]  = (string) trans('firefly.no_category');
 
         return $return;
     }
@@ -171,11 +172,14 @@ trait AugumentData
 
         /** @var BudgetLimitRepositoryInterface $blRepository */
         $blRepository     = app(BudgetLimitRepositoryInterface::class);
+
+        $end->endOfMonth();
         // properties for cache
         $cache            = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
         $cache->addProperty($budget->id);
+        $cache->addProperty($this->convertToNative);
         $cache->addProperty('get-limits');
 
         if ($cache->has()) {
@@ -183,15 +187,18 @@ trait AugumentData
         }
 
         $set              = $blRepository->getBudgetLimits($budget, $start, $end);
-        $limits           = new Collection();
+
         $budgetCollection = new Collection([$budget]);
+
+        // merge sets based on a key, in case of convert to native
+        $limits           = new Collection();
 
         /** @var BudgetLimit $entry */
         foreach ($set as $entry) {
             $currency     = $entry->transactionCurrency;
-
-            if (null === $currency) {
-                $currency = app('amount')->getDefaultCurrency();
+            if ($this->convertToNative) {
+                // the sumExpenses method already handles this.
+                $currency = $this->defaultCurrency;
             }
 
             // clone because these objects change each other.
@@ -211,7 +218,7 @@ trait AugumentData
         }
         $cache->store($limits);
 
-        return $set;
+        return $limits;
     }
 
     /**
@@ -225,10 +232,10 @@ trait AugumentData
         /** @var array $journal */
         foreach ($array as $journal) {
             $name           = '(no name)';
-            if (TransactionType::WITHDRAWAL === $journal['transaction_type_type']) {
+            if (TransactionTypeEnum::WITHDRAWAL->value === $journal['transaction_type_type']) {
                 $name = $journal['destination_account_name'];
             }
-            if (TransactionType::WITHDRAWAL !== $journal['transaction_type_type']) {
+            if (TransactionTypeEnum::WITHDRAWAL->value !== $journal['transaction_type_type']) {
                 $name = $journal['source_account_name'];
             }
 
@@ -248,7 +255,7 @@ trait AugumentData
         $collector = app(GroupCollectorInterface::class);
 
         $total     = $assets->merge($opposing);
-        $collector->setRange($start, $end)->setTypes([TransactionType::WITHDRAWAL])->setAccounts($total);
+        $collector->setRange($start, $end)->setTypes([TransactionTypeEnum::WITHDRAWAL->value])->setAccounts($total);
         $journals  = $collector->getExtractedJournals();
         $sum       = [
             'grand_sum'    => '0',
@@ -256,7 +263,7 @@ trait AugumentData
         ];
         // loop to support multi currency
         foreach ($journals as $journal) {
-            $currencyId                              = (int)$journal['currency_id'];
+            $currencyId                              = (int) $journal['currency_id'];
 
             // if not set, set to zero:
             if (!array_key_exists($currencyId, $sum['per_currency'])) {

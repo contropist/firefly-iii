@@ -73,6 +73,7 @@ class StoreController extends Controller
         $userGroup          = $request->getUserGroup();
         $data['user_group'] = $userGroup;
 
+
         // overrule user group and see where we end up.
         // what happens when we refer to a budget that is not in this user group?
 
@@ -80,21 +81,21 @@ class StoreController extends Controller
 
         try {
             $transactionGroup = $this->groupRepository->store($data);
-        } catch (DuplicateTransactionException $e) { // @phpstan-ignore-line
+        } catch (DuplicateTransactionException $e) {
             app('log')->warning('Caught a duplicate transaction. Return error message.');
             $validator = Validator::make(
                 ['transactions' => [['description' => $e->getMessage()]]],
                 ['transactions.0.description' => new IsDuplicateTransaction()]
             );
 
-            throw new ValidationException($validator); // @phpstan-ignore-line
-        } catch (FireflyException $e) { // @phpstan-ignore-line
+            throw new ValidationException($validator);
+        } catch (FireflyException $e) {
             app('log')->warning('Caught an exception. Return error message.');
             app('log')->error($e->getMessage());
             $message   = sprintf('Internal exception: %s', $e->getMessage());
             $validator = Validator::make(['transactions' => [['description' => $message]]], ['transactions.0.description' => new IsDuplicateTransaction()]);
 
-            throw new ValidationException($validator); // @phpstan-ignore-line
+            throw new ValidationException($validator);
         }
         app('preferences')->mark();
         $applyRules         = $data['apply_rules'] ?? true;

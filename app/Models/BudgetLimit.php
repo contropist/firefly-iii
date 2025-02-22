@@ -23,62 +23,30 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Carbon\Carbon;
-use Eloquent;
+use FireflyIII\Casts\SeparateTimezoneCaster;
 use FireflyIII\Events\Model\BudgetLimit\Created;
 use FireflyIII\Events\Model\BudgetLimit\Deleted;
 use FireflyIII\Events\Model\BudgetLimit\Updated;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-/**
- * FireflyIII\Models\BudgetLimit
- *
- * @property int                      $id
- * @property null|Carbon              $created_at
- * @property null|Carbon              $updated_at
- * @property int                      $budget_id
- * @property int                      $transaction_currency_id
- * @property Carbon                   $start_date
- * @property null|Carbon              $end_date
- * @property string                   $amount
- * @property string                   $spent
- * @property null|string              $period
- * @property int|string               $generated
- * @property Budget                   $budget
- * @property null|TransactionCurrency $transactionCurrency
- *
- * @method static Builder|BudgetLimit newModelQuery()
- * @method static Builder|BudgetLimit newQuery()
- * @method static Builder|BudgetLimit query()
- * @method static Builder|BudgetLimit whereAmount($value)
- * @method static Builder|BudgetLimit whereBudgetId($value)
- * @method static Builder|BudgetLimit whereCreatedAt($value)
- * @method static Builder|BudgetLimit whereEndDate($value)
- * @method static Builder|BudgetLimit whereGenerated($value)
- * @method static Builder|BudgetLimit whereId($value)
- * @method static Builder|BudgetLimit wherePeriod($value)
- * @method static Builder|BudgetLimit whereStartDate($value)
- * @method static Builder|BudgetLimit whereTransactionCurrencyId($value)
- * @method static Builder|BudgetLimit whereUpdatedAt($value)
- *
- * @mixin Eloquent
- */
 class BudgetLimit extends Model
 {
     use ReturnsIntegerIdTrait;
 
     protected $casts
                         = [
-            'created_at'  => 'datetime',
-            'updated_at'  => 'datetime',
-            'start_date'  => 'date',
-            'end_date'    => 'date',
-            'auto_budget' => 'boolean',
+            'created_at'         => 'datetime',
+            'updated_at'         => 'datetime',
+            'start_date'         => SeparateTimezoneCaster::class,
+            'end_date'           => SeparateTimezoneCaster::class,
+            'auto_budget'        => 'boolean',
+            'amount'             => 'string',
+            'native_amount'      => 'string',
         ];
     protected $dispatchesEvents
                         = [
@@ -87,7 +55,7 @@ class BudgetLimit extends Model
             'deleted' => Deleted::class,
         ];
 
-    protected $fillable = ['budget_id', 'start_date', 'end_date', 'amount', 'transaction_currency_id'];
+    protected $fillable = ['budget_id', 'start_date', 'end_date', 'start_date_tz', 'end_date_tz', 'amount', 'transaction_currency_id', 'native_amount'];
 
     /**
      * Route binder. Converts the key in the URL to the specified object (or throw 404).
@@ -97,7 +65,7 @@ class BudgetLimit extends Model
     public static function routeBinder(string $value): self
     {
         if (auth()->check()) {
-            $budgetLimitId = (int)$value;
+            $budgetLimitId = (int) $value;
             $budgetLimit   = self::where('budget_limits.id', $budgetLimitId)
                 ->leftJoin('budgets', 'budgets.id', '=', 'budget_limits.budget_id')
                 ->where('budgets.user_id', auth()->user()->id)
@@ -116,6 +84,14 @@ class BudgetLimit extends Model
         return $this->belongsTo(Budget::class);
     }
 
+    /**
+     * Get all the notes.
+     */
+    public function notes(): MorphMany
+    {
+        return $this->morphMany(Note::class, 'noteable');
+    }
+
     public function transactionCurrency(): BelongsTo
     {
         return $this->belongsTo(TransactionCurrency::class);
@@ -127,21 +103,21 @@ class BudgetLimit extends Model
     protected function amount(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (string)$value,
+            get: static fn ($value) => (string) $value,
         );
     }
 
     protected function budgetId(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 
     protected function transactionCurrencyId(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 }

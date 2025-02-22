@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ShowController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -59,7 +60,7 @@ class ShowController extends Controller
         $this->middleware(
             function ($request, $next) {
                 app('view')->share('mainTitleIcon', 'fa-paint-brush');
-                app('view')->share('title', (string)trans('firefly.recurrences'));
+                app('view')->share('title', (string) trans('firefly.recurrences'));
 
                 $this->recurring = app(RecurringRepositoryInterface::class);
 
@@ -77,16 +78,18 @@ class ShowController extends Controller
      */
     public function show(Recurrence $recurrence)
     {
-        $repos                 = app(AttachmentRepositoryInterface::class);
+        $repos                  = app(AttachmentRepositoryInterface::class);
 
         /** @var RecurrenceTransformer $transformer */
-        $transformer           = app(RecurrenceTransformer::class);
+        $transformer            = app(RecurrenceTransformer::class);
         $transformer->setParameters(new ParameterBag());
 
-        $array                 = $transformer->transform($recurrence);
-        $groups                = $this->recurring->getTransactions($recurrence);
-        $today                 = today(config('app.timezone'));
-        $array['repeat_until'] = null !== $array['repeat_until'] ? new Carbon($array['repeat_until']) : null;
+        $array                  = $transformer->transform($recurrence);
+
+        $groups                 = $this->recurring->getTransactions($recurrence);
+        $today                  = today(config('app.timezone'));
+        $array['repeat_until']  = null !== $array['repeat_until'] ? new Carbon($array['repeat_until']) : null;
+        $array['journal_count'] = $this->recurring->getJournalCount($recurrence);
 
         // transform dates back to Carbon objects and expand information
         foreach ($array['repetitions'] as $index => $repetition) {
@@ -102,9 +105,9 @@ class ShowController extends Controller
         }
 
         // add attachments to the recurrence object.
-        $attachments           = $recurrence->attachments()->get();
-        $array['attachments']  = [];
-        $attachmentTransformer = app(AttachmentTransformer::class);
+        $attachments            = $recurrence->attachments()->get();
+        $array['attachments']   = [];
+        $attachmentTransformer  = app(AttachmentTransformer::class);
 
         /** @var Attachment $attachment */
         foreach ($attachments as $attachment) {
@@ -113,7 +116,16 @@ class ShowController extends Controller
             $array['attachments'][] = $item;
         }
 
-        $subTitle              = (string)trans('firefly.overview_for_recurrence', ['title' => $recurrence->title]);
+        if (null !== $array['nr_of_repetitions']) {
+            $left = $array['nr_of_repetitions'] - $array['journal_count'];
+            $left = (int) max(0, $left);
+            // limit each repetition to X occurrences:
+            foreach ($array['repetitions'] as $index => $repetition) {
+                $array['repetitions'][$index]['occurrences'] = array_slice($repetition['occurrences'], 0, $left);
+            }
+        }
+
+        $subTitle               = (string) trans('firefly.overview_for_recurrence', ['title' => $recurrence->title]);
 
         return view('recurring.show', compact('recurrence', 'subTitle', 'array', 'groups', 'today'));
     }

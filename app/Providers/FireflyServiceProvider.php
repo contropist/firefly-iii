@@ -58,6 +58,7 @@ use FireflyIII\Services\Password\Verifier;
 use FireflyIII\Services\Webhook\StandardWebhookSender;
 use FireflyIII\Services\Webhook\WebhookSenderInterface;
 use FireflyIII\Support\Amount;
+use FireflyIII\Support\Balance;
 use FireflyIII\Support\ExpandedForm;
 use FireflyIII\Support\FireflyConfig;
 use FireflyIII\Support\Form\AccountForm;
@@ -78,7 +79,7 @@ use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 /**
  * Class FireflyServiceProvider.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings("PHPMD.CouplingBetweenObjects")
  */
 class FireflyServiceProvider extends ServiceProvider
 {
@@ -97,7 +98,7 @@ class FireflyServiceProvider extends ServiceProvider
     /**
      * Register stuff.
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings("PHPMD.ExcessiveMethodLength")
      */
     public function register(): void
     {
@@ -131,6 +132,12 @@ class FireflyServiceProvider extends ServiceProvider
             'steam',
             static function () {
                 return new Steam();
+            }
+        );
+        $this->app->bind(
+            'balance',
+            static function () {
+                return new Balance();
             }
         );
         $this->app->bind(

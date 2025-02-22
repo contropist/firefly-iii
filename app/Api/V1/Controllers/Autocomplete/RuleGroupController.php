@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RuleGroupController.php
  * Copyright (c) 2020 james@firefly-iii.org
@@ -65,12 +66,12 @@ class RuleGroupController extends Controller
         /** @var RuleGroup $group */
         foreach ($groups as $group) {
             $response[] = [
-                'id'          => (string)$group->id,
+                'id'          => (string) $group->id,
                 'name'        => $group->title,
                 'description' => $group->description,
             ];
         }
 
-        return response()->json($response);
+        return response()->api($response);
     }
 }

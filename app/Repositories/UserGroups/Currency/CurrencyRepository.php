@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Repositories\UserGroups\Currency;
 
+use FireflyIII\Events\Preferences\UserGroupChangedDefaultCurrency;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Factory\TransactionCurrencyFactory;
 use FireflyIII\Models\AccountMeta;
@@ -38,6 +39,7 @@ use FireflyIII\Services\Internal\Destroy\CurrencyDestroyService;
 use FireflyIII\Services\Internal\Update\CurrencyUpdateService;
 use FireflyIII\Support\Repositories\UserGroup\UserGroupTrait;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class CurrencyRepository
@@ -77,7 +79,15 @@ class CurrencyRepository implements CurrencyRepositoryInterface
         }
 
         // is being used in accounts:
-        $meta             = AccountMeta::where('name', 'currency_id')->where('data', json_encode((string)$currency->id))->count();
+        $meta             = AccountMeta::where('name', 'currency_id')->where('data', json_encode((string) $currency->id))->count();
+        if ($meta > 0) {
+            app('log')->info(sprintf('Used in %d accounts as currency_id, return true. ', $meta));
+
+            return 'account_meta';
+        }
+
+        // second search using integer check.
+        $meta             = AccountMeta::where('name', 'currency_id')->where('data', json_encode((int) $currency->id))->count();
         if ($meta > 0) {
             app('log')->info(sprintf('Used in %d accounts as currency_id, return true. ', $meta));
 
@@ -170,11 +180,11 @@ class CurrencyRepository implements CurrencyRepositoryInterface
             $hasId                     = $local->contains(static function (TransactionCurrency $entry) use ($current) {
                 return $entry->id === $current->id;
             });
-            $isDefault                 = $local->contains(static function (TransactionCurrency $entry) use ($current) {
-                return 1 === (int)$entry->pivot->group_default && $entry->id === $current->id;
+            $isNative                  = $local->contains(static function (TransactionCurrency $entry) use ($current) {
+                return 1 === (int) $entry->pivot->group_default && $entry->id === $current->id;
             });
             $current->userGroupEnabled = $hasId;
-            $current->userGroupDefault = $isDefault;
+            $current->userGroupNative  = $isNative;
 
             return $current;
         });
@@ -183,13 +193,14 @@ class CurrencyRepository implements CurrencyRepositoryInterface
     public function get(): Collection
     {
         $all = $this->userGroup->currencies()->orderBy('code', 'ASC')->withPivot(['group_default'])->get();
-        $all->map(static function (TransactionCurrency $current) {
+        $all->map(static function (TransactionCurrency $current) { // @phpstan-ignore-line
             $current->userGroupEnabled = true;
-            $current->userGroupDefault = 1 === (int)$current->pivot->group_default;
+            $current->userGroupNative  = 1 === (int) $current->pivot->group_default;
 
             return $current;
         });
 
+        /** @var Collection */
         return $all;
     }
 
@@ -234,7 +245,7 @@ class CurrencyRepository implements CurrencyRepositoryInterface
             app('log')->debug('Grabbing default currency for this user...');
 
             /** @var null|TransactionCurrency $result */
-            $result = app('amount')->getDefaultCurrencyByUserGroup($this->user->userGroup);
+            $result = app('amount')->getNativeCurrencyByUserGroup($this->user->userGroup);
         }
 
         app('log')->debug(sprintf('Final result: %s', $result->code));
@@ -252,10 +263,10 @@ class CurrencyRepository implements CurrencyRepositoryInterface
     public function findCurrencyNull(?int $currencyId, ?string $currencyCode): ?TransactionCurrency
     {
         app('log')->debug('Now in findCurrencyNull()');
-        $result = $this->find((int)$currencyId);
+        $result = $this->find((int) $currencyId);
         if (null === $result) {
             app('log')->debug(sprintf('Searching for currency with code %s...', $currencyCode));
-            $result = $this->findByCode((string)$currencyCode);
+            $result = $this->findByCode((string) $currencyCode);
         }
         if (null !== $result && false === $result->enabled) {
             app('log')->debug(sprintf('Also enabled currency %s', $result->code));
@@ -298,21 +309,11 @@ class CurrencyRepository implements CurrencyRepositoryInterface
         return $currency->code === config('firefly.default_currency', 'EUR');
     }
 
-    public function makeDefault(TransactionCurrency $currency): void
-    {
-        app('log')->debug(sprintf('Enabled + made default currency %s for user #%d', $currency->code, $this->userGroup->id));
-        $this->userGroup->currencies()->detach($currency->id);
-        foreach ($this->userGroup->currencies()->get() as $item) {
-            $this->userGroup->currencies()->updateExistingPivot($item->id, ['group_default' => false]);
-        }
-        $this->userGroup->currencies()->syncWithoutDetaching([$currency->id => ['group_default' => true]]);
-    }
-
     public function searchCurrency(string $search, int $limit): Collection
     {
         $query = TransactionCurrency::where('enabled', true);
         if ('' !== $search) {
-            $query->where('name', 'LIKE', sprintf('%%%s%%', $search));
+            $query->whereLike('name', sprintf('%%%s%%', $search));
         }
 
         return $query->take($limit)->get();
@@ -346,9 +347,6 @@ class CurrencyRepository implements CurrencyRepositoryInterface
         if (false === $enabled && true === $default) {
             $enabled = true;
         }
-        if (false === $default) {
-            app('log')->warning(sprintf('Set default=false will NOT do anything for currency %s', $currency->code));
-        }
 
         // update currency with current user specific settings
         $currency->refreshForUser($this->user);
@@ -367,17 +365,28 @@ class CurrencyRepository implements CurrencyRepositoryInterface
 
         // currency must be made default.
         if (true === $default) {
-            app('log')->debug(sprintf('Enabled + made default currency %s for user #%d', $currency->code, $this->userGroup->id));
-            $this->userGroup->currencies()->detach($currency->id);
-            foreach ($this->userGroup->currencies()->get() as $item) {
-                $this->userGroup->currencies()->updateExistingPivot($item->id, ['group_default' => false]);
-            }
-            $this->userGroup->currencies()->syncWithoutDetaching([$currency->id => ['group_default' => true]]);
+            $this->makeDefault($currency);
         }
 
         /** @var CurrencyUpdateService $service */
         $service = app(CurrencyUpdateService::class);
 
         return $service->update($currency, $data);
+    }
+
+    public function makeDefault(TransactionCurrency $currency): void
+    {
+        $current = app('amount')->getNativeCurrencyByUserGroup($this->userGroup);
+        app('log')->debug(sprintf('Enabled + made default currency %s for user #%d', $currency->code, $this->userGroup->id));
+        $this->userGroup->currencies()->detach($currency->id);
+        foreach ($this->userGroup->currencies()->get() as $item) {
+            $this->userGroup->currencies()->updateExistingPivot($item->id, ['group_default' => false]);
+        }
+        $this->userGroup->currencies()->syncWithoutDetaching([$currency->id => ['group_default' => true]]);
+        if ($current->id !== $currency->id) {
+            Log::debug('Trigger on a different default currency.');
+            // clear all native amounts through an event.
+            event(new UserGroupChangedDefaultCurrency($this->userGroup));
+        }
     }
 }

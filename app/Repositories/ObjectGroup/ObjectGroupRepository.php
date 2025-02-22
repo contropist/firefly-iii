@@ -120,7 +120,7 @@ class ObjectGroupRepository implements ObjectGroupRepositoryInterface
             $parts = explode(' ', $query);
             foreach ($parts as $part) {
                 $search = sprintf('%%%s%%', $part);
-                $dbQuery->where('title', 'LIKE', $search);
+                $dbQuery->whereLike('title', $search);
             }
         }
 
@@ -141,7 +141,7 @@ class ObjectGroupRepository implements ObjectGroupRepositoryInterface
         }
 
         if (array_key_exists('order', $data)) {
-            $this->setOrder($objectGroup, (int)$data['order']);
+            $this->setOrder($objectGroup, (int) $data['order']);
         }
 
         $objectGroup->save();

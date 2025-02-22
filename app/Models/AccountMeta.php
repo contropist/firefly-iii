@@ -23,36 +23,10 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Carbon\Carbon;
-use Eloquent;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * Class AccountMeta
- *
- * @property int         $id
- * @property null|Carbon $created_at
- * @property null|Carbon $updated_at
- * @property int         $account_id
- * @property string      $name
- * @property mixed       $data
- * @property Account     $account
- *
- * @method static Builder|AccountMeta newModelQuery()
- * @method static Builder|AccountMeta newQuery()
- * @method static Builder|AccountMeta query()
- * @method static Builder|AccountMeta whereAccountId($value)
- * @method static Builder|AccountMeta whereCreatedAt($value)
- * @method static Builder|AccountMeta whereData($value)
- * @method static Builder|AccountMeta whereId($value)
- * @method static Builder|AccountMeta whereName($value)
- * @method static Builder|AccountMeta whereUpdatedAt($value)
- *
- * @mixin Eloquent
- */
 class AccountMeta extends Model
 {
     use ReturnsIntegerIdTrait;
@@ -64,8 +38,6 @@ class AccountMeta extends Model
         ];
 
     protected $fillable = ['account_id', 'name', 'data'];
-
-    /** @var string The table to store the data in */
     protected $table    = 'account_meta';
 
     public function account(): BelongsTo
@@ -75,7 +47,7 @@ class AccountMeta extends Model
 
     public function getDataAttribute(mixed $value): string
     {
-        return (string)json_decode($value, true);
+        return (string) json_decode($value, true);
     }
 
     public function setDataAttribute(mixed $value): void

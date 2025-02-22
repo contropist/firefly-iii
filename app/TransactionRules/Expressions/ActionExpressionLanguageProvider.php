@@ -28,7 +28,7 @@ use Symfony\Component\ExpressionLanguage\ExpressionFunction;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
 
 /**
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings("PHPMD.UnusedFormalParameter")
  */
 class ActionExpressionLanguageProvider implements ExpressionFunctionProviderInterface
 {
@@ -36,7 +36,7 @@ class ActionExpressionLanguageProvider implements ExpressionFunctionProviderInte
     {
         $function = function ($arguments, $str): string {
             if (!is_string($str)) {
-                return (string)$str;
+                return (string) $str;
             }
 
             return strtolower($str.'!');

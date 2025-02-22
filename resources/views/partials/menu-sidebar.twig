@@ -16,7 +16,7 @@
     </li>
 
     <li class="{{ activeRoutePartial('bills') }}">
-        <a href="{{ route('bills.index') }}">
+        <a href="{{ route('subscriptions.index') }}">
             <em class="fa fa-calendar-o fa-fw"></em>
             <span>{{ 'bills'|_ }}</span>
         </a>
@@ -85,12 +85,12 @@
                 </a>
             </li>
             {% if true == featuringWebhooks %}
-            <li class="{{ activeRoutePartial('webhooks') }}">
-                <a href="{{ route('webhooks.index') }}">
-                    <span class="fa fa-angle-right fa-fw"></span>
-                    <span>{{ 'webhooks'|_ }}</span>
-                </a>
-            </li>
+                <li class="{{ activeRoutePartial('webhooks') }}">
+                    <a href="{{ route('webhooks.index') }}">
+                        <span class="fa fa-angle-right fa-fw"></span>
+                        <span>{{ 'webhooks'|_ }}</span>
+                    </a>
+                </li>
             {% else %}
                 <li class="">
                     <a href="#">
@@ -189,7 +189,7 @@
         </li>
     {% endif %}
 
-    <li class="{{ activeRoutePartial('admin') }} {{ activeRoutePartial('profile') }} {{ activeRoutePartial('preferences') }} {{ activeRoutePartial('currencies') }} treeview"
+    <li class="{{ activeRoutePartial('administrations') }} {{ activeRoutePartial('setting') }} {{ activeRoutePartial('profile') }} {{ activeRoutePartial('preferences') }} {{ activeRoutePartial('currencies') }} {{ activeRoutePartial('exchange-rates') }} treeview"
         id="option-menu">
         <a href="#">
             <em class="fa fa-sliders fa-fw"></em>
@@ -219,21 +219,43 @@
                     <span>{{ 'currencies'|_ }}</span>
                 </a>
             </li>
+            {% if config('cer.enabled') %}
+            <li class="{{ activeRoutePartial('exchange-rates') }}">
+                <a class="{{ activeRoutePartial('exchange-rates') }}" href="{{ route('exchange-rates.index') }}">
+                    <span class="fa fa-angle-right fa-fw"></span>
+                    <span>{{ 'menu_exchange_rates_index'|_ }}</span>
+                </a>
+            </li>
+            {% endif %}
+            <li class="{{ activeRoutePartial('administrations') }}">
+                <a class="{{ activeRoutePartial('administration') }}" href="{{ route('administrations.index') }}">
+                    <span class="fa fa-angle-right fa-fw"></span>
+                    <span>{{ 'administrations_index_menu'|_ }}</span>
+                </a>
+            </li>
             {% if hasRole('owner') %}
-                <li class="{{ activeRoutePartial('admin') }}">
-                    <a class="{{ activeRoutePartial('admin') }}" href="{{ route('admin.index') }}">
+                <li class="{{ activeRoutePartial('settings') }}">
+                    <a class="{{ activeRoutePartial('settings') }}" href="{{ route('settings.index') }}">
                         <span class="fa fa-angle-right fa-fw"></span>
-                        <span>{{ 'administration'|_ }}</span>
+                        <span>{{ 'system_settings'|_ }}</span>
                     </a>
                 </li>
             {% endif %}
         </ul>
     </li>
 
-
-    {% if 'remote_user_guard' != authGuard or '' != logoutUri %}
+    {% if 'web' == authGuard %}
         <li>
             <a href="{{ route('logout') }}" class="logout-link">
+                <em class="fa fa-sign-out fa-fw"></em>
+                <span>{{ 'logout'|_ }}
+                </span>
+            </a>
+        </li>
+    {% endif %}
+    {% if 'remote_user_guard' == authGuard and '' != logoutUrl %}
+        <li>
+            <a href="{{ logoutUrl }}">
                 <em class="fa fa-sign-out fa-fw"></em>
                 <span>{{ 'logout'|_ }}</span>
             </a>

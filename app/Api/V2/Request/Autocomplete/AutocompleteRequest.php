@@ -1,4 +1,5 @@
 <?php
+
 /*
  * AutocompleteRequest.php
  * Copyright (c) 2023 james@firefly-iii.org
@@ -23,8 +24,8 @@ declare(strict_types=1);
 
 namespace FireflyIII\Api\V2\Request\Autocomplete;
 
-use FireflyIII\Enums\UserRoleEnum;
-use FireflyIII\Models\AccountType;
+use FireflyIII\Enums\AccountTypeEnum;
+use FireflyIII\Support\Http\Api\AccountFilter;
 use FireflyIII\Support\Request\ChecksLogin;
 use FireflyIII\Support\Request\ConvertsDataTypes;
 use Illuminate\Foundation\Http\FormRequest;
@@ -34,36 +35,63 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class AutocompleteRequest extends FormRequest
 {
+    use AccountFilter;
     use ChecksLogin;
     use ConvertsDataTypes;
 
-    protected array $acceptedRoles = [UserRoleEnum::MANAGE_TRANSACTIONS];
-
-    public function getData(): array
+    /**
+     * Loops over all possible query parameters (these are shared over ALL auto complete requests)
+     * and returns a validated array of parameters.
+     *
+     * The advantage is a single class. But you may also submit "account types" to an endpoint that doesn't use these.
+     */
+    public function getParameters(): array
     {
-        $types = $this->convertString('types');
-        $array = [];
-        if ('' !== $types) {
-            $array = explode(',', $types);
-        }
-        $limit = $this->convertInteger('limit');
-        $limit = 0 === $limit ? 10 : $limit;
-
-        // remove 'initial balance' and another from allowed types. its internal
-        $array = array_diff($array, [AccountType::INITIAL_BALANCE, AccountType::RECONCILIATION]);
-
-        return [
-            'types' => $array,
-            'query' => $this->convertString('query'),
-            'date'  => $this->getCarbonDate('date'),
-            'limit' => $limit,
+        $array                  = [
+            'date'              => $this->convertDateTime('date'),
+            'query'             => $this->clearString((string) $this->get('query')),
+            'size'              => $this->integerFromValue('size'),
+            'page'              => $this->integerFromValue('page'),
+            'account_types'     => $this->arrayFromValue($this->get('account_types')),
+            'transaction_types' => $this->arrayFromValue($this->get('transaction_types')),
         ];
+        $array['size']          = $array['size'] < 1 || $array['size'] > 100 ? 15 : $array['size'];
+        $array['page']          = max($array['page'], 1);
+        if (null === $array['account_types']) {
+            $array['account_types'] = [];
+        }
+        if (null === $array['transaction_types']) {
+            $array['transaction_types'] = [];
+        }
+
+        // remove 'initial balance' from allowed types. its internal
+        $array['account_types'] = array_diff($array['account_types'], [AccountTypeEnum::INITIAL_BALANCE->value, AccountTypeEnum::RECONCILIATION->value, AccountTypeEnum::CREDITCARD->value]);
+        $array['account_types'] = $this->getAccountTypeParameter($array['account_types']);
+
+        return $array;
+    }
+
+    private function getAccountTypeParameter(array $types): array
+    {
+        $return = [];
+        foreach ($types as $type) {
+            $return = array_merge($return, $this->mapAccountTypes($type));
+        }
+
+        return array_unique($return);
     }
 
     public function rules(): array
     {
+        $valid = array_keys($this->types);
+
         return [
-            'limit' => 'min:0|max:1337',
+            'date'              => 'nullable|date|after:1900-01-01|before:2100-01-01',
+            'query'             => 'nullable|string',
+            'size'              => 'nullable|integer|min:1|max:100',
+            'page'              => 'nullable|integer|min:1',
+            'account_types'     => sprintf('nullable|in:%s', implode(',', $valid)),
+            'transaction_types' => 'nullable|in:todo',
         ];
     }
 }

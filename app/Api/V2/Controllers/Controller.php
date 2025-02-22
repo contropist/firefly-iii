@@ -47,16 +47,17 @@ use Symfony\Component\HttpFoundation\ParameterBag;
 /**
  * Class Controller
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.NumberOfChildren)
+ * @SuppressWarnings("PHPMD.CouplingBetweenObjects")
+ * @SuppressWarnings("PHPMD.NumberOfChildren")
  */
 class Controller extends BaseController
 {
     use ValidatesUserGroupTrait;
 
-    protected const string CONTENT_TYPE = 'application/vnd.api+json';
+    protected const string CONTENT_TYPE     = 'application/vnd.api+json';
+    protected array        $acceptedRoles   = [UserRoleEnum::READ_ONLY];
     protected ParameterBag $parameters;
-    protected array $acceptedRoles      = [UserRoleEnum::READ_ONLY];
+    protected bool         $convertToNative = false;
 
     public function __construct()
     {
@@ -73,7 +74,7 @@ class Controller extends BaseController
      * TODO duplicate from V1 controller
      * Method to grab all parameters from the URL.
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings("PHPMD.NPathComplexity")
      */
     private function getParameters(): ParameterBag
     {
@@ -81,7 +82,7 @@ class Controller extends BaseController
         $bag->set('limit', 50);
 
         try {
-            $page = (int)request()->get('page');
+            $page = (int) request()->get('page');
         } catch (ContainerExceptionInterface|NotFoundExceptionInterface $e) {
             $page = 1;
         }
@@ -92,8 +93,8 @@ class Controller extends BaseController
         if ($page < 1) {
             $page = 1;
         }
-        if ($page > (2 ^ 16)) {
-            $page = (2 ^ 16);
+        if ($page > 2 ** 16) {
+            $page = 2 ** 16;
         }
         $bag->set('page', $page);
 
@@ -111,10 +112,10 @@ class Controller extends BaseController
             }
             if (null !== $date) {
                 try {
-                    $obj = Carbon::parse((string)$date, config('app.timezone'));
+                    $obj = Carbon::parse((string) $date, config('app.timezone'));
                 } catch (InvalidDateException|InvalidFormatException $e) {
                     // don't care
-                    app('log')->warning(sprintf('Ignored invalid date "%s" in API v2 controller parameter check: %s', substr((string)$date, 0, 20), $e->getMessage()));
+                    app('log')->warning(sprintf('Ignored invalid date "%s" in API v2 controller parameter check: %s', substr((string) $date, 0, 20), $e->getMessage()));
                 }
                 // out of range? set to null.
                 if (null !== $obj && ($obj->year <= 1900 || $obj->year > 2099)) {
@@ -138,11 +139,11 @@ class Controller extends BaseController
                 $value = null;
             }
             if (null !== $value) {
-                $bag->set($integer, (int)$value);
+                $bag->set($integer, (int) $value);
             }
             if (null === $value && 'limit' === $integer && auth()->check()) {
                 // set default for user:
-                $pageSize = (int)app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
+                $pageSize = (int) app('preferences')->getForUser(auth()->user(), 'listPageSize', 50)->data;
                 $bag->set($integer, $pageSize);
             }
         }
@@ -157,6 +158,9 @@ class Controller extends BaseController
     {
         $manager  = new Manager();
         $baseUrl  = request()->getSchemeAndHttpHost().'/api/v2';
+
+        // TODO add stuff to path?
+
         $manager->setSerializer(new JsonApiSerializer($baseUrl));
 
         $objects  = $paginator->getCollection();

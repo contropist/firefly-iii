@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CategoryController.php
  * Copyright (c) 2020 james@firefly-iii.org
@@ -66,12 +67,12 @@ class CategoryController extends Controller
         $filtered = $result->map(
             static function (Category $item) {
                 return [
-                    'id'   => (string)$item->id,
+                    'id'   => (string) $item->id,
                     'name' => $item->name,
                 ];
             }
         );
 
-        return response()->json($filtered);
+        return response()->api($filtered->toArray());
     }
 }

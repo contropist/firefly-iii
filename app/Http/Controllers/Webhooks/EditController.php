@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EditController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -48,7 +49,7 @@ class EditController extends Controller
             static function ($request, $next) {
                 app('view')->share('mainTitleIcon', 'fa-bolt');
                 app('view')->share('subTitleIcon', 'fa-pencil');
-                app('view')->share('title', (string)trans('firefly.webhooks'));
+                app('view')->share('title', (string) trans('firefly.webhooks'));
 
                 return $next($request);
             }
@@ -68,7 +69,7 @@ class EditController extends Controller
             throw new NotFoundHttpException('Webhooks are not enabled.');
         }
         Log::channel('audit')->info('User visits webhook edit page.');
-        $subTitle = (string)trans('firefly.edit_webhook', ['title' => $webhook->title]);
+        $subTitle = (string) trans('firefly.edit_webhook', ['title' => $webhook->title]);
         $this->rememberPreviousUrl('webhooks.edit.url');
 
         return view('webhooks.edit', compact('webhook', 'subTitle'));

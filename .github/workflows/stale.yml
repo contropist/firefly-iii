@@ -12,6 +12,7 @@ jobs:
     permissions:
       issues: write  # for actions/stale to close stale issues
       pull-requests: write  # for actions/stale to close stale PRs
+      actions: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/stale@v9
@@ -35,4 +36,5 @@ jobs:
             Thank you for your contributions.
           days-before-stale: 14
           days-before-close: 7
-          exempt-issue-labels: 'enhancement,feature,bug,announcement,epic,triage'
+          exempt-all-milestones: true
+          exempt-issue-labels: 'triage'

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BillUpdateService.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -53,8 +54,8 @@ class BillUpdateService
 
         if (array_key_exists('currency_id', $data) || array_key_exists('currency_code', $data)) {
             $factory                       = app(TransactionCurrencyFactory::class);
-            $currency                      = $factory->find((int)($data['currency_id'] ?? null), $data['currency_code'] ?? null) ??
-                        app('amount')->getDefaultCurrencyByUserGroup($bill->user->userGroup);
+            $currency                      = $factory->find((int) ($data['currency_id'] ?? null), $data['currency_code'] ?? null) ??
+                        app('amount')->getNativeCurrencyByUserGroup($bill->user->userGroup);
 
             // enable the currency if it isn't.
             $currency->enabled             = true;
@@ -75,14 +76,14 @@ class BillUpdateService
         ];
         // update note:
         if (array_key_exists('notes', $data)) {
-            $this->updateNote($bill, (string)$data['notes']);
+            $this->updateNote($bill, (string) $data['notes']);
         }
 
         // update order.
         if (array_key_exists('order', $data)) {
             // update the order of the piggy bank:
             $oldOrder = $bill->order;
-            $newOrder = (int)($data['order'] ?? $oldOrder);
+            $newOrder = (int) ($data['order'] ?? $oldOrder);
             if ($oldOrder !== $newOrder) {
                 $this->updateOrder($bill, $oldOrder, $newOrder);
             }
@@ -112,7 +113,7 @@ class BillUpdateService
         }
         if (array_key_exists('object_group_id', $data)) {
             // try also with ID:
-            $objectGroupId = (int)($data['object_group_id'] ?? 0);
+            $objectGroupId = (int) ($data['object_group_id'] ?? 0);
             if (0 !== $objectGroupId) {
                 $objectGroup = $this->findObjectGroupById($objectGroupId);
                 if (null !== $objectGroup) {
@@ -130,24 +131,25 @@ class BillUpdateService
     }
 
     /**
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings("PHPMD.NPathComplexity")
      */
     private function updateBillProperties(Bill $bill, array $data): Bill
     {
-        if (array_key_exists('name', $data) && '' !== (string)$data['name']) {
+        if (array_key_exists('name', $data) && '' !== (string) $data['name']) {
             $bill->name = $data['name'];
         }
 
-        if (array_key_exists('amount_min', $data) && '' !== (string)$data['amount_min']) {
+        if (array_key_exists('amount_min', $data) && '' !== (string) $data['amount_min']) {
             $bill->amount_min = $data['amount_min'];
         }
-        if (array_key_exists('amount_max', $data) && '' !== (string)$data['amount_max']) {
+        if (array_key_exists('amount_max', $data) && '' !== (string) $data['amount_max']) {
             $bill->amount_max = $data['amount_max'];
         }
-        if (array_key_exists('date', $data) && '' !== (string)$data['date']) {
-            $bill->date = $data['date'];
+        if (array_key_exists('date', $data) && '' !== (string) $data['date']) {
+            $bill->date    = $data['date'];
+            $bill->date_tz = $data['date']->format('e');
         }
-        if (array_key_exists('repeat_freq', $data) && '' !== (string)$data['repeat_freq']) {
+        if (array_key_exists('repeat_freq', $data) && '' !== (string) $data['repeat_freq']) {
             $bill->repeat_freq = $data['repeat_freq'];
         }
         if (array_key_exists('skip', $data)) {
@@ -157,10 +159,12 @@ class BillUpdateService
             $bill->active = $data['active'];
         }
         if (array_key_exists('end_date', $data)) {
-            $bill->end_date = $data['end_date'];
+            $bill->end_date    = $data['end_date'];
+            $bill->end_date_tz = $data['end_date']?->format('e');
         }
         if (array_key_exists('extension_date', $data)) {
-            $bill->extension_date = $data['extension_date'];
+            $bill->extension_date    = $data['extension_date'];
+            $bill->extension_date_tz = $data['extension_date']?->format('e');
         }
 
         $bill->match     = 'EMPTY';
@@ -246,6 +250,7 @@ class BillUpdateService
 
     private function getRuleTrigger(Rule $rule, string $key): ?RuleTrigger
     {
+        /** @var null|RuleTrigger */
         return $rule->ruleTriggers()->where('trigger_type', $key)->first();
     }
 }

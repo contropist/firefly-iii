@@ -26,8 +26,10 @@ namespace FireflyIII\Api\V1\Controllers\Search;
 
 use FireflyIII\Api\V1\Controllers\Controller;
 use FireflyIII\Support\Http\Api\AccountFilter;
+use FireflyIII\Support\JsonApi\Enrichments\AccountEnrichment;
 use FireflyIII\Support\Search\AccountSearch;
 use FireflyIII\Transformers\AccountTransformer;
+use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -62,14 +64,14 @@ class AccountController extends Controller
      */
     public function search(Request $request): JsonResponse|Response
     {
-        app('log')->debug('Now in account search()');
         $manager     = $this->getManager();
-        $query       = trim((string)$request->get('query'));
-        $field       = trim((string)$request->get('field'));
+        $query       = trim((string) $request->get('query'));
+        $field       = trim((string) $request->get('field'));
         $type        = $request->get('type') ?? 'all';
         if ('' === $query || !in_array($field, $this->validFields, true)) {
             return response(null, 422);
         }
+        app('log')->debug(sprintf('Now in account search("%s", "%s")', $field, $query));
         $types       = $this->mapAccountTypes($type);
 
         /** @var AccountSearch $search */
@@ -80,6 +82,15 @@ class AccountController extends Controller
         $search->setQuery($query);
 
         $accounts    = $search->search();
+
+        // enrich
+        /** @var User $admin */
+        $admin       = auth()->user();
+        $enrichment  = new AccountEnrichment();
+        $enrichment->setUser($admin);
+        $enrichment->setConvertToNative($this->convertToNative);
+        $enrichment->setNative($this->nativeCurrency);
+        $accounts    = $enrichment->enrich($accounts);
 
         /** @var AccountTransformer $transformer */
         $transformer = app(AccountTransformer::class);

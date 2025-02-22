@@ -31,7 +31,6 @@ import observePlugin from 'store/plugins/observe';
 import Alpine from "alpinejs";
 import * as bootstrap from 'bootstrap';
 import {getFreshVariable} from "../store/get-fresh-variable.js";
-// import even more
 import {getVariable} from "../store/get-variable.js";
 import {getViewRange} from "../support/get-viewrange.js";
 import {loadTranslations} from "../support/load-translations.js";
@@ -43,6 +42,7 @@ store.addPlugin(observePlugin);
 
 window.bootstrapped = false;
 window.store = store;
+window.bootstrap = bootstrap;
 
 
 

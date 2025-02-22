@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ModelInformation.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,6 +24,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Support\Http\Controllers;
 
+use FireflyIII\Enums\AccountTypeEnum;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\AccountType;
 use FireflyIII\Models\Bill;
@@ -76,17 +78,17 @@ trait ModelInformation
 
         // types of liability:
         /** @var AccountType $debt */
-        $debt           = $repository->getAccountTypeByType(AccountType::DEBT);
+        $debt           = $repository->getAccountTypeByType(AccountTypeEnum::DEBT->value);
 
         /** @var AccountType $loan */
-        $loan           = $repository->getAccountTypeByType(AccountType::LOAN);
+        $loan           = $repository->getAccountTypeByType(AccountTypeEnum::LOAN->value);
 
         /** @var AccountType $mortgage */
-        $mortgage       = $repository->getAccountTypeByType(AccountType::MORTGAGE);
+        $mortgage       = $repository->getAccountTypeByType(AccountTypeEnum::MORTGAGE->value);
         $liabilityTypes = [
-            $debt->id     => (string)trans(sprintf('firefly.account_type_%s', AccountType::DEBT)),
-            $loan->id     => (string)trans(sprintf('firefly.account_type_%s', AccountType::LOAN)),
-            $mortgage->id => (string)trans(sprintf('firefly.account_type_%s', AccountType::MORTGAGE)),
+            $debt->id     => (string) trans(sprintf('firefly.account_type_%s', AccountTypeEnum::DEBT->value)),
+            $loan->id     => (string) trans(sprintf('firefly.account_type_%s', AccountTypeEnum::LOAN->value)),
+            $mortgage->id => (string) trans(sprintf('firefly.account_type_%s', AccountTypeEnum::MORTGAGE->value)),
         ];
         asort($liabilityTypes);
 
@@ -97,7 +99,7 @@ trait ModelInformation
     {
         $roles = [];
         foreach (config('firefly.accountRoles') as $role) {
-            $roles[$role] = (string)trans(sprintf('firefly.account_role_%s', $role));
+            $roles[$role] = (string) trans(sprintf('firefly.account_role_%s', $role));
         }
 
         return $roles;
@@ -115,7 +117,7 @@ trait ModelInformation
         $triggers     = [];
         foreach ($operators as $key => $operator) {
             if ('user_action' !== $key && false === $operator['alias']) {
-                $triggers[$key] = (string)trans(sprintf('firefly.rule_trigger_%s_choice', $key));
+                $triggers[$key] = (string) trans(sprintf('firefly.rule_trigger_%s_choice', $key));
             }
         }
         asort($triggers);
@@ -157,7 +159,7 @@ trait ModelInformation
     /**
      * @throws FireflyException
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings("PHPMD.ExcessiveMethodLength")
      */
     private function getTriggersForJournal(TransactionJournal $journal): array
     {
@@ -166,7 +168,7 @@ trait ModelInformation
         $triggers                = [];
         foreach ($operators as $key => $operator) {
             if ('user_action' !== $key && false === $operator['alias']) {
-                $triggers[$key] = (string)trans(sprintf('firefly.rule_trigger_%s_choice', $key));
+                $triggers[$key] = (string) trans(sprintf('firefly.rule_trigger_%s_choice', $key));
             }
         }
         asort($triggers);
@@ -197,7 +199,7 @@ trait ModelInformation
         ++$index;
 
         // amount_exactly:
-        $journalTriggers[$index] = 'amount_exactly';
+        $journalTriggers[$index] = 'amount_is';
         $values[$index]          = $destination->amount;
         ++$index;
 
@@ -242,7 +244,7 @@ trait ModelInformation
         // notes (if)
         $notes                   = $journal->notes()->first();
         if (null !== $notes) {
-            $journalTriggers[$index] = 'notes_are';
+            $journalTriggers[$index] = 'notes_is';
             $values[$index]          = $notes->text;
         }
 

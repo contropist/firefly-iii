@@ -25,7 +25,10 @@ namespace FireflyIII\Support;
 
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Configuration;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Contracts\Encryption\EncryptException;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class FireflyConfig.
@@ -46,12 +49,35 @@ class FireflyConfig
         return 1 === Configuration::where('name', $name)->count();
     }
 
+    public function getEncrypted(string $name, mixed $default = null): ?Configuration
+    {
+        $result = $this->get($name, $default);
+        if (null === $result) {
+            return null;
+        }
+        if ('' === $result->data) {
+            Log::warning(sprintf('Empty encrypted configuration value found: "%s"', $name));
+
+            return $result;
+        }
+
+        try {
+            $result->data = decrypt($result->data);
+        } catch (DecryptException $e) {
+            Log::error(sprintf('Could not decrypt configuration value "%s": %s', $name, $e->getMessage()));
+
+            return $result;
+        }
+
+        return $result;
+    }
+
     /**
      * @param null|bool|int|string $default
      *
      * @throws FireflyException
      */
-    public function get(string $name, $default = null): ?Configuration
+    public function get(string $name, mixed $default = null): ?Configuration
     {
         $fullName = 'ff-config-'.$name;
         if (\Cache::has($fullName)) {
@@ -78,10 +104,7 @@ class FireflyConfig
         return $this->set($name, $default);
     }
 
-    /**
-     * @param mixed $value
-     */
-    public function set(string $name, $value): Configuration
+    public function set(string $name, mixed $value): Configuration
     {
         try {
             $config = Configuration::whereName($name)->whereNull('deleted_at')->first();
@@ -110,10 +133,7 @@ class FireflyConfig
         return $config;
     }
 
-    /**
-     * @param mixed $default
-     */
-    public function getFresh(string $name, $default = null): ?Configuration
+    public function getFresh(string $name, mixed $default = null): ?Configuration
     {
         $config = Configuration::where('name', $name)->first(['id', 'name', 'data']);
         if (null !== $config) {
@@ -133,5 +153,18 @@ class FireflyConfig
     public function put(string $name, $value): Configuration
     {
         return $this->set($name, $value);
+    }
+
+    public function setEncrypted(string $name, mixed $value): Configuration
+    {
+        try {
+            $encrypted = encrypt($value);
+        } catch (EncryptException $e) {
+            Log::error(sprintf('Could not encrypt configuration value "%s": %s', $name, $e->getMessage()));
+
+            throw new FireflyException(sprintf('Could not encrypt configuration value "%s". Cowardly refuse to continue.', $name));
+        }
+
+        return $this->set($name, $encrypted);
     }
 }

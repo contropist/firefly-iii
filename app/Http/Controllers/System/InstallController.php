@@ -1,4 +1,5 @@
 <?php
+
 /**
  * InstallController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -61,8 +62,6 @@ class InstallController extends Controller
             'migrate'                            => ['--seed' => true, '--force' => true],
             'generate-keys'                      => [], // an exception :(
             'firefly-iii:upgrade-database'       => [],
-            'firefly-iii:correct-database'       => [],
-            'firefly-iii:report-integrity'       => [],
             'firefly-iii:set-latest-version'     => ['--james-is-cool' => true],
             'firefly-iii:verify-security-alerts' => [],
         ];
@@ -79,17 +78,17 @@ class InstallController extends Controller
     {
         app('view')->share('FF_VERSION', config('firefly.version'));
         // index will set FF3 version.
-        app('fireflyconfig')->set('ff3_version', (string)config('firefly.version'));
+        app('fireflyconfig')->set('ff3_version', (string) config('firefly.version'));
 
         // set new DB version.
-        app('fireflyconfig')->set('db_version', (int)config('firefly.db_version'));
+        app('fireflyconfig')->set('db_version', (int) config('firefly.db_version'));
 
         return view('install.index');
     }
 
     public function runCommand(Request $request): JsonResponse
     {
-        $requestIndex = (int)$request->get('index');
+        $requestIndex = (int) $request->get('index');
         $response     = [
             'hasNextCommand' => false,
             'done'           => true,
@@ -99,7 +98,7 @@ class InstallController extends Controller
         ];
 
         app('log')->debug(sprintf('Will now run commands. Request index is %d', $requestIndex));
-        $indexes      = array_values(array_keys($this->upgradeCommands));
+        $indexes      = array_keys($this->upgradeCommands);
         if (array_key_exists($requestIndex, $indexes)) {
             $command                    = $indexes[$requestIndex];
             $parameters                 = $this->upgradeCommands[$command];
@@ -170,7 +169,7 @@ class InstallController extends Controller
             return;
         }
 
-        file_put_contents($publicKey, (string)$key->getPublicKey());
+        file_put_contents($publicKey, (string) $key->getPublicKey());
         file_put_contents($privateKey, $key->toString('PKCS1'));
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ShowController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -55,7 +56,7 @@ class ShowController extends Controller
 
         $this->middleware(
             function ($request, $next) {
-                app('view')->share('title', (string)trans('firefly.categories'));
+                app('view')->share('title', (string) trans('firefly.categories'));
                 app('view')->share('mainTitleIcon', 'fa-bookmark');
                 $this->repository = app(CategoryRepositoryInterface::class);
 
@@ -73,14 +74,15 @@ class ShowController extends Controller
      */
     public function show(Request $request, Category $category, ?Carbon $start = null, ?Carbon $end = null)
     {
-        // @var Carbon $start
         $start ??= session('start', today(config('app.timezone'))->startOfMonth());
-        // @var Carbon $end
         $end   ??= session('end', today(config('app.timezone'))->endOfMonth());
+
+        /** @var Carbon $start */
+        /** @var Carbon $end */
         $subTitleIcon = 'fa-bookmark';
-        $page         = (int)$request->get('page');
+        $page         = (int) $request->get('page');
         $attachments  = $this->repository->getAttachments($category);
-        $pageSize     = (int)app('preferences')->get('listPageSize', 50)->data;
+        $pageSize     = (int) app('preferences')->get('listPageSize', 50)->data;
         $oldest       = $this->repository->firstUseDate($category) ?? today(config('app.timezone'))->startOfYear();
         $periods      = $this->getCategoryPeriodOverview($category, $oldest, $end);
         $path         = route('categories.show', [$category->id, $start->format('Y-m-d'), $end->format('Y-m-d')]);
@@ -115,13 +117,13 @@ class ShowController extends Controller
     {
         // default values:
         $subTitleIcon = 'fa-bookmark';
-        $page         = (int)$request->get('page');
-        $pageSize     = (int)app('preferences')->get('listPageSize', 50)->data;
+        $page         = (int) $request->get('page');
+        $pageSize     = (int) app('preferences')->get('listPageSize', 50)->data;
         $start        = null;
         $end          = null;
         $periods      = new Collection();
 
-        $subTitle     = (string)trans('firefly.all_journals_for_category', ['name' => $category->name]);
+        $subTitle     = (string) trans('firefly.all_journals_for_category', ['name' => $category->name]);
         $first        = $this->repository->firstUseDate($category);
 
         /** @var Carbon $start */

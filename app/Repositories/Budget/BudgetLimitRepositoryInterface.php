@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BudgetLimitRepositoryInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -62,6 +63,10 @@ interface BudgetLimitRepositoryInterface
     public function getAllBudgetLimitsByCurrency(TransactionCurrency $currency, ?Carbon $start = null, ?Carbon $end = null): Collection;
 
     public function getBudgetLimits(Budget $budget, ?Carbon $start = null, ?Carbon $end = null): Collection;
+
+    public function getNoteText(BudgetLimit $budgetLimit): string;
+
+    public function setNoteText(BudgetLimit $budgetLimit, string $text): void;
 
     public function setUser(null|Authenticatable|User $user): void;
 

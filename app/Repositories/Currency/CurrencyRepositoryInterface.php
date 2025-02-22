@@ -26,6 +26,7 @@ namespace FireflyIII\Repositories\Currency;
 use Carbon\Carbon;
 use FireflyIII\Models\CurrencyExchangeRate;
 use FireflyIII\Models\TransactionCurrency;
+use FireflyIII\Models\UserGroup;
 use FireflyIII\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
@@ -35,6 +36,8 @@ use Illuminate\Support\Collection;
  */
 interface CurrencyRepositoryInterface
 {
+    public function find(int $currencyId): ?TransactionCurrency;
+
     /**
      * Find by currency code, return NULL if unfound.
      *
@@ -65,4 +68,6 @@ interface CurrencyRepositoryInterface
     public function setExchangeRate(TransactionCurrency $fromCurrency, TransactionCurrency $toCurrency, Carbon $date, float $rate): CurrencyExchangeRate;
 
     public function setUser(null|Authenticatable|User $user): void;
+
+    public function setUserGroup(UserGroup $userGroup): void;
 }

@@ -76,7 +76,7 @@ class Authenticate
      * @throws FireflyException
      * @throws AuthenticationException
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     protected function authenticate($request, array $guards)
     {
@@ -122,10 +122,10 @@ class Authenticate
         }
         if (null !== $user) {
             // app('log')->debug(get_class($user));
-            if (1 === (int)$user->blocked) {
-                $message = (string)trans('firefly.block_account_logout');
+            if (1 === (int) $user->blocked) {
+                $message = (string) trans('firefly.block_account_logout');
                 if ('email_changed' === $user->blocked_code) {
-                    $message = (string)trans('firefly.email_changed_logout');
+                    $message = (string) trans('firefly.email_changed_logout');
                 }
                 app('log')->warning('User is blocked, cannot use authentication method.');
                 app('session')->flash('logoutMessage', $message);

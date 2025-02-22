@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AvailableBudgetRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -65,8 +66,8 @@ class Request extends FormRequest
             'currency_id'   => 'numeric|exists:transaction_currencies,id',
             'currency_code' => 'min:3|max:51|exists:transaction_currencies,code',
             'amount'        => ['nullable', new IsValidPositiveAmount()],
-            'start'         => 'date',
-            'end'           => 'date',
+            'start'         => 'date|after:1900-01-01|before:2099-12-31',
+            'end'           => 'date|after:1900-01-01|before:2099-12-31',
         ];
     }
 
@@ -83,7 +84,7 @@ class Request extends FormRequest
                     $start = new Carbon($data['start']);
                     $end   = new Carbon($data['end']);
                     if ($end->isBefore($start)) {
-                        $validator->errors()->add('end', (string)trans('validation.date_after'));
+                        $validator->errors()->add('end', (string) trans('validation.date_after'));
                     }
                 }
             }

@@ -25,9 +25,9 @@ declare(strict_types=1);
 namespace FireflyIII\Repositories\UserGroups\Budget;
 
 use Carbon\Carbon;
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Helpers\Collector\GroupCollectorInterface;
-use FireflyIII\Models\TransactionType;
 use FireflyIII\Support\Repositories\UserGroup\UserGroupTrait;
 use Illuminate\Support\Collection;
 
@@ -45,7 +45,7 @@ class OperationsRepository implements OperationsRepositoryInterface
     {
         /** @var GroupCollectorInterface $collector */
         $collector = app(GroupCollectorInterface::class);
-        $collector->setUserGroup($this->userGroup)->setRange($start, $end)->setTypes([TransactionType::WITHDRAWAL]);
+        $collector->setUserGroup($this->userGroup)->setRange($start, $end)->setTypes([TransactionTypeEnum::WITHDRAWAL->value]);
         if (null !== $accounts && $accounts->count() > 0) {
             $collector->setAccounts($accounts);
         }
@@ -60,9 +60,9 @@ class OperationsRepository implements OperationsRepositoryInterface
         $array     = [];
 
         foreach ($journals as $journal) {
-            $currencyId                                                                   = (int)$journal['currency_id'];
-            $budgetId                                                                     = (int)$journal['budget_id'];
-            $budgetName                                                                   = (string)$journal['budget_name'];
+            $currencyId                                                                   = (int) $journal['currency_id'];
+            $budgetId                                                                     = (int) $journal['budget_id'];
+            $budgetName                                                                   = (string) $journal['budget_name'];
 
             // catch "no budget" entries.
             if (0 === $budgetId) {
@@ -88,7 +88,7 @@ class OperationsRepository implements OperationsRepositoryInterface
 
             // add journal to array:
             // only a subset of the fields.
-            $journalId                                                                    = (int)$journal['transaction_journal_id'];
+            $journalId                                                                    = (int) $journal['transaction_journal_id'];
             $final                                                                        = [
                 'amount'                          => app('steam')->negative($journal['amount']),
                 'currency_id'                     => $journal['currency_id'],

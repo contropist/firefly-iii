@@ -72,7 +72,7 @@ class ParseDateString
     /**
      * @throws FireflyException
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings("PHPMD.NPathComplexity")
      */
     public function parseDate(string $date): Carbon
     {
@@ -112,7 +112,7 @@ class ParseDateString
             return new Carbon('1984-09-17');
         }
         // maybe a year, nothing else?
-        if (4 === strlen($date) && is_numeric($date) && (int)$date > 1000 && (int)$date <= 3000) {
+        if (4 === strlen($date) && is_numeric($date) && (int) $date > 1000 && (int) $date <= 3000) {
             return new Carbon(sprintf('%d-01-01', $date));
         }
 
@@ -123,7 +123,7 @@ class ParseDateString
     {
         $today = today(config('app.timezone'))->startOfDay();
 
-        return match ($keyword) { // @phpstan-ignore-line
+        return match ($keyword) {
             default                 => $today,
             'yesterday'             => $today->subDay(),
             'tomorrow'              => $today->addDay(),
@@ -144,7 +144,7 @@ class ParseDateString
 
         try {
             $result = Carbon::createFromFormat('Y-m-d', $date);
-        } catch (InvalidFormatException $e) { // @phpstan-ignore-line
+        } catch (InvalidFormatException $e) {
             Log::error(sprintf('parseDefaultDate("%s") ran into an error, but dont mind: %s', $date, $e->getMessage()));
         }
         if (false === $result) {
@@ -190,7 +190,7 @@ class ParseDateString
             }
             $direction = str_starts_with($part, '+') ? 1 : 0;
             $period    = $part[strlen($part) - 1];
-            $number    = (int)substr($part, 1, -1);
+            $number    = (int) substr($part, 1, -1);
             if (!array_key_exists($period, $functions[$direction])) {
                 app('log')->error(sprintf('No method for direction %d and period "%s".', $direction, $period));
 

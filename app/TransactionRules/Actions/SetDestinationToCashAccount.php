@@ -1,4 +1,5 @@
 <?php
+
 /*
  * SetDestinationToCashAccount.php
  * Copyright (c) 2023 james@firefly-iii.org
@@ -23,12 +24,12 @@ declare(strict_types=1);
 
 namespace FireflyIII\TransactionRules\Actions;
 
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Events\Model\Rule\RuleActionFailedOnArray;
 use FireflyIII\Events\TriggeredAuditLog;
 use FireflyIII\Models\RuleAction;
 use FireflyIII\Models\Transaction;
 use FireflyIII\Models\TransactionJournal;
-use FireflyIII\Models\TransactionType;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\User;
 
@@ -53,7 +54,7 @@ class SetDestinationToCashAccount implements ActionInterface
         $user        = User::find($journal['user_id']);
 
         /** @var null|TransactionJournal $object */
-        $object      = $user->transactionJournals()->find((int)$journal['transaction_journal_id']);
+        $object      = $user->transactionJournals()->find((int) $journal['transaction_journal_id']);
         $repository  = app(AccountRepositoryInterface::class);
 
         if (null === $object) {
@@ -63,7 +64,7 @@ class SetDestinationToCashAccount implements ActionInterface
             return false;
         }
         $type        = $object->transactionType->type;
-        if (TransactionType::WITHDRAWAL !== $type) {
+        if (TransactionTypeEnum::WITHDRAWAL->value !== $type) {
             app('log')->error('Transaction must be withdrawal.');
             event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.not_withdrawal')));
 

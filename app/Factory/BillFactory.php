@@ -48,8 +48,8 @@ class BillFactory
     {
         app('log')->debug(sprintf('Now in %s', __METHOD__), $data);
         $factory          = app(TransactionCurrencyFactory::class);
-        $currency         = $factory->find((int)($data['currency_id'] ?? null), (string)($data['currency_code'] ?? null)) ??
-                    app('amount')->getDefaultCurrencyByUserGroup($this->user->userGroup);
+        $currency         = $factory->find((int) ($data['currency_id'] ?? null), (string) ($data['currency_code'] ?? null)) ??
+                    app('amount')->getNativeCurrencyByUserGroup($this->user->userGroup);
 
         try {
             $skip   = array_key_exists('skip', $data) ? $data['skip'] : 0;
@@ -66,8 +66,11 @@ class BillFactory
                     'transaction_currency_id' => $currency->id,
                     'amount_max'              => $data['amount_max'],
                     'date'                    => $data['date'],
+                    'date_tz'                 => $data['date']->format('e'),
                     'end_date'                => $data['end_date'] ?? null,
+                    'end_date_tz'             => $data['end_date']?->format('e'),
                     'extension_date'          => $data['extension_date'] ?? null,
+                    'extension_date_tz'       => $data['extension_date']?->format('e'),
                     'repeat_freq'             => $data['repeat_freq'],
                     'skip'                    => $skip,
                     'automatch'               => true,
@@ -82,7 +85,7 @@ class BillFactory
         }
 
         if (array_key_exists('notes', $data)) {
-            $this->updateNote($bill, (string)$data['notes']);
+            $this->updateNote($bill, (string) $data['notes']);
         }
         $objectGroupTitle = $data['object_group_title'] ?? '';
         if ('' !== $objectGroupTitle) {
@@ -93,7 +96,7 @@ class BillFactory
             }
         }
         // try also with ID:
-        $objectGroupId    = (int)($data['object_group_id'] ?? 0);
+        $objectGroupId    = (int) ($data['object_group_id'] ?? 0);
         if (0 !== $objectGroupId) {
             $objectGroup = $this->findObjectGroupById($objectGroupId);
             if (null !== $objectGroup) {
@@ -107,8 +110,8 @@ class BillFactory
 
     public function find(?int $billId, ?string $billName): ?Bill
     {
-        $billId   = (int)$billId;
-        $billName = (string)$billName;
+        $billId   = (int) $billId;
+        $billName = (string) $billName;
         $bill     = null;
         // first find by ID:
         if ($billId > 0) {
@@ -126,7 +129,8 @@ class BillFactory
 
     public function findByName(string $name): ?Bill
     {
-        return $this->user->bills()->where('name', 'LIKE', sprintf('%%%s%%', $name))->first();
+        /** @var null|Bill */
+        return $this->user->bills()->whereLike('name', sprintf('%%%s%%', $name))->first();
     }
 
     public function setUser(User $user): void

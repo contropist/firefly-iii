@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace FireflyIII\Factory;
 
 use Carbon\Carbon;
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Exceptions\DuplicateTransactionException;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Account;
@@ -33,7 +34,7 @@ use FireflyIII\Models\Transaction;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Models\TransactionJournalMeta;
-use FireflyIII\Models\TransactionType;
+use FireflyIII\Models\UserGroup;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Repositories\Bill\BillRepositoryInterface;
 use FireflyIII\Repositories\Budget\BudgetRepositoryInterface;
@@ -43,15 +44,17 @@ use FireflyIII\Repositories\TransactionType\TransactionTypeRepositoryInterface;
 use FireflyIII\Repositories\UserGroups\Currency\CurrencyRepositoryInterface;
 use FireflyIII\Services\Internal\Destroy\JournalDestroyService;
 use FireflyIII\Services\Internal\Support\JournalServiceTrait;
+use FireflyIII\Support\Facades\FireflyConfig;
 use FireflyIII\Support\NullArrayObject;
 use FireflyIII\User;
 use FireflyIII\Validation\AccountValidator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class TransactionJournalFactory
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings("PHPMD.CouplingBetweenObjects")
  */
 class TransactionJournalFactory
 {
@@ -67,6 +70,7 @@ class TransactionJournalFactory
     private PiggyBankRepositoryInterface       $piggyRepository;
     private TransactionTypeRepositoryInterface $typeRepository;
     private User                               $user;
+    private UserGroup $userGroup;
 
     /**
      * Constructor.
@@ -148,7 +152,7 @@ class TransactionJournalFactory
      * @throws DuplicateTransactionException
      * @throws FireflyException
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings("PHPMD.ExcessiveMethodLength")
      */
     private function createJournal(NullArrayObject $row): ?TransactionJournal
     {
@@ -156,18 +160,24 @@ class TransactionJournalFactory
 
         $this->errorIfDuplicate($row['import_hash_v2']);
 
-        /** Some basic fields */
+        // Some basic fields
         $type                  = $this->typeRepository->findTransactionType(null, $row['type']);
         $carbon                = $row['date'] ?? today(config('app.timezone'));
         $order                 = $row['order'] ?? 0;
-        $currency              = $this->currencyRepository->findCurrency((int)$row['currency_id'], $row['currency_code']);
+        $currency              = $this->currencyRepository->findCurrency((int) $row['currency_id'], $row['currency_code']);
         $foreignCurrency       = $this->currencyRepository->findCurrencyNull($row['foreign_currency_id'], $row['foreign_currency_code']);
-        $bill                  = $this->billRepository->findBill((int)$row['bill_id'], $row['bill_name']);
-        $billId                = TransactionType::WITHDRAWAL === $type->type && null !== $bill ? $bill->id : null;
-        $description           = (string)$row['description'];
+        $bill                  = $this->billRepository->findBill((int) $row['bill_id'], $row['bill_name']);
+        $billId                = TransactionTypeEnum::WITHDRAWAL->value === $type->type && null !== $bill ? $bill->id : null;
+        $description           = (string) $row['description'];
 
         // Manipulate basic fields
         $carbon->setTimezone(config('app.timezone'));
+
+        // 2024-11-19, overrule timezone with UTC and store it as UTC.
+
+        if (true === FireflyConfig::get('utc', false)->data) {
+            $carbon->setTimezone('UTC');
+        }
 
         try {
             // validate source and destination using a new Validator.
@@ -204,7 +214,7 @@ class TransactionJournalFactory
         app('log')->debug('Done with getAccount(2x)');
 
         // this is the moment for a reconciliation sanity check (again).
-        if (TransactionType::RECONCILIATION === $type->type) {
+        if (TransactionTypeEnum::RECONCILIATION->value === $type->type) {
             [$sourceAccount, $destinationAccount] = $this->reconciliationSanityCheck($sourceAccount, $destinationAccount);
         }
 
@@ -219,12 +229,13 @@ class TransactionJournalFactory
         $journal               = TransactionJournal::create(
             [
                 'user_id'                 => $this->user->id,
-                'user_group_id'           => $this->user->user_group_id,
+                'user_group_id'           => $this->userGroup->id,
                 'transaction_type_id'     => $type->id,
                 'bill_id'                 => $billId,
                 'transaction_currency_id' => $currency->id,
                 'description'             => substr($description, 0, 1000),
-                'date'                    => $carbon->format('Y-m-d H:i:s'),
+                'date'                    => $carbon,
+                'date_tz'                 => $carbon->format('e'),
                 'order'                   => $order,
                 'tag_count'               => 0,
                 'completed'               => 0,
@@ -234,7 +245,6 @@ class TransactionJournalFactory
 
         /** Create two transactions. */
         $transactionFactory    = app(TransactionFactory::class);
-        $transactionFactory->setUser($this->user);
         $transactionFactory->setJournal($journal);
         $transactionFactory->setAccount($sourceAccount);
         $transactionFactory->setCurrency($currency);
@@ -243,7 +253,7 @@ class TransactionJournalFactory
         $transactionFactory->setReconciled($row['reconciled'] ?? false);
 
         try {
-            $negative = $transactionFactory->createNegative((string)$row['amount'], (string)$row['foreign_amount']);
+            $negative = $transactionFactory->createNegative((string) $row['amount'], (string) $row['foreign_amount']);
         } catch (FireflyException $e) {
             app('log')->error(sprintf('Exception creating negative transaction: %s', $e->getMessage()));
             $this->forceDeleteOnError(new Collection([$journal]));
@@ -253,7 +263,6 @@ class TransactionJournalFactory
 
         /** @var TransactionFactory $transactionFactory */
         $transactionFactory    = app(TransactionFactory::class);
-        $transactionFactory->setUser($this->user);
         $transactionFactory->setJournal($journal);
         $transactionFactory->setAccount($destinationAccount);
         $transactionFactory->setAccountInformation($destInfo);
@@ -261,8 +270,24 @@ class TransactionJournalFactory
         $transactionFactory->setForeignCurrency($foreignCurrency);
         $transactionFactory->setReconciled($row['reconciled'] ?? false);
 
+        // if the foreign currency is set and is different, and the transaction type is a transfer,
+        // Firefly III will save the foreign currency information in such a way that both
+        // asset accounts can look at the "amount" and "transaction_currency_id" column and
+        // see the currency they expect to see.
+        $amount                = (string) $row['amount'];
+        $foreignAmount         = (string) $row['foreign_amount'];
+        if (null !== $foreignCurrency && $foreignCurrency->id !== $currency->id
+            && TransactionTypeEnum::TRANSFER->value === $type->type
+        ) {
+            $transactionFactory->setCurrency($foreignCurrency);
+            $transactionFactory->setForeignCurrency($currency);
+            $amount        = (string) $row['foreign_amount'];
+            $foreignAmount = (string) $row['amount'];
+            Log::debug('Swap native/foreign amounts in transfer for new save method.');
+        }
+
         try {
-            $transactionFactory->createPositive((string)$row['amount'], (string)$row['foreign_amount']);
+            $transactionFactory->createPositive($amount, $foreignAmount);
         } catch (FireflyException $e) {
             app('log')->error(sprintf('Exception creating positive transaction: %s', $e->getMessage()));
             $this->forceTrDelete($negative);
@@ -327,7 +352,7 @@ class TransactionJournalFactory
             app('log')->warning(sprintf('Found a duplicate in errorIfDuplicate because hash %s is not unique!', $hash));
             $journal = $result->transactionJournal()->withTrashed()->first();
             $group   = $journal?->transactionGroup()->withTrashed()->first();
-            $groupId = (int)$group?->id;
+            $groupId = (int) $group?->id;
 
             throw new DuplicateTransactionException(sprintf('Duplicate of transaction #%d.', $groupId));
         }
@@ -345,10 +370,10 @@ class TransactionJournalFactory
 
         // validate source account.
         $array            = [
-            'id'     => null !== $data['source_id'] ? (int)$data['source_id'] : null,
-            'name'   => null !== $data['source_name'] ? (string)$data['source_name'] : null,
-            'iban'   => null !== $data['source_iban'] ? (string)$data['source_iban'] : null,
-            'number' => null !== $data['source_number'] ? (string)$data['source_number'] : null,
+            'id'     => null !== $data['source_id'] ? (int) $data['source_id'] : null,
+            'name'   => null !== $data['source_name'] ? (string) $data['source_name'] : null,
+            'iban'   => null !== $data['source_iban'] ? (string) $data['source_iban'] : null,
+            'number' => null !== $data['source_number'] ? (string) $data['source_number'] : null,
         ];
         $validSource      = $this->accountValidator->validateSource($array);
 
@@ -360,10 +385,10 @@ class TransactionJournalFactory
 
         // validate destination account
         $array            = [
-            'id'     => null !== $data['destination_id'] ? (int)$data['destination_id'] : null,
-            'name'   => null !== $data['destination_name'] ? (string)$data['destination_name'] : null,
-            'iban'   => null !== $data['destination_iban'] ? (string)$data['destination_iban'] : null,
-            'number' => null !== $data['destination_number'] ? (string)$data['destination_number'] : null,
+            'id'     => null !== $data['destination_id'] ? (int) $data['destination_id'] : null,
+            'name'   => null !== $data['destination_name'] ? (string) $data['destination_name'] : null,
+            'iban'   => null !== $data['destination_iban'] ? (string) $data['destination_iban'] : null,
+            'number' => null !== $data['destination_number'] ? (string) $data['destination_number'] : null,
         ];
 
         $validDestination = $this->accountValidator->validateDestination($array);
@@ -378,7 +403,8 @@ class TransactionJournalFactory
      */
     public function setUser(User $user): void
     {
-        $this->user = $user;
+        $this->user      = $user;
+        $this->userGroup = $user->userGroup;
         $this->currencyRepository->setUser($this->user);
         $this->tagFactory->setUser($user);
         $this->billRepository->setUser($this->user);
@@ -386,6 +412,18 @@ class TransactionJournalFactory
         $this->categoryRepository->setUser($this->user);
         $this->piggyRepository->setUser($this->user);
         $this->accountRepository->setUser($this->user);
+    }
+
+    public function setUserGroup(UserGroup $userGroup): void
+    {
+        $this->userGroup = $userGroup;
+        $this->currencyRepository->setUserGroup($userGroup);
+        $this->tagFactory->setUserGroup($userGroup);
+        $this->billRepository->setUserGroup($userGroup);
+        $this->budgetRepository->setUserGroup($userGroup);
+        $this->categoryRepository->setUserGroup($userGroup);
+        $this->piggyRepository->setUserGroup($userGroup);
+        $this->accountRepository->setUserGroup($userGroup);
     }
 
     private function reconciliationSanityCheck(?Account $sourceAccount, ?Account $destinationAccount): array
@@ -396,7 +434,7 @@ class TransactionJournalFactory
 
             return [$sourceAccount, $destinationAccount];
         }
-        if (null === $destinationAccount) { // @phpstan-ignore-line
+        if (null === $destinationAccount) {
             app('log')->debug('Destination account is NULL, source account is not.');
             $account = $this->accountRepository->getReconciliation($sourceAccount);
             app('log')->debug(sprintf('Will return account #%d ("%s") of type "%s"', $account->id, $account->name, $account->accountType->type));
@@ -424,8 +462,8 @@ class TransactionJournalFactory
         app('log')->debug('Now in getCurrencyByAccount()');
 
         return match ($type) {
-            default                  => $this->getCurrency($currency, $source),
-            TransactionType::DEPOSIT => $this->getCurrency($currency, $destination),
+            default                             => $this->getCurrency($currency, $source),
+            TransactionTypeEnum::DEPOSIT->value => $this->getCurrency($currency, $destination),
         };
     }
 
@@ -440,7 +478,7 @@ class TransactionJournalFactory
         $preference = $this->accountRepository->getAccountCurrency($account);
         if (null === $preference && null === $currency) {
             // return user's default:
-            return app('amount')->getDefaultCurrencyByUserGroup($this->user->userGroup);
+            return app('amount')->getNativeCurrencyByUserGroup($this->user->userGroup);
         }
         $result     = $preference ?? $currency;
         app('log')->debug(sprintf('Currency is now #%d (%s) because of account #%d (%s)', $result->id, $result->code, $account->id, $account->name));
@@ -468,7 +506,7 @@ class TransactionJournalFactory
      */
     private function getForeignByAccount(string $type, ?TransactionCurrency $foreignCurrency, Account $destination): ?TransactionCurrency
     {
-        if (TransactionType::TRANSFER === $type) {
+        if (TransactionTypeEnum::TRANSFER->value === $type) {
             return $this->getCurrency($foreignCurrency, $destination);
         }
 
@@ -510,7 +548,7 @@ class TransactionJournalFactory
     {
         app('log')->debug('Will now store piggy event.');
 
-        $piggyBank = $this->piggyRepository->findPiggyBank((int)$data['piggy_bank_id'], $data['piggy_bank_name']);
+        $piggyBank = $this->piggyRepository->findPiggyBank((int) $data['piggy_bank_id'], $data['piggy_bank_name']);
 
         if (null !== $piggyBank) {
             $this->piggyEventFactory->create($journal, $piggyBank);
@@ -533,7 +571,7 @@ class TransactionJournalFactory
         $set     = [
             'journal' => $journal,
             'name'    => $field,
-            'data'    => (string)($data[$field] ?? ''),
+            'data'    => (string) ($data[$field] ?? ''),
         ];
         if ($data[$field] instanceof Carbon) {
             $data[$field]->setTimezone(config('app.timezone'));
@@ -550,7 +588,7 @@ class TransactionJournalFactory
 
     private function storeLocation(TransactionJournal $journal, NullArrayObject $data): void
     {
-        if (true === $data['store_location']) {
+        if (null !== $data['longitude'] && null !== $data['latitude'] && null !== $data['zoom_level']) {
             $location             = new Location();
             $location->longitude  = $data['longitude'];
             $location->latitude   = $data['latitude'];

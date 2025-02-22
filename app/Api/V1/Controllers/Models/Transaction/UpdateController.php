@@ -1,4 +1,5 @@
 <?php
+
 /*
  * UpdateController.php
  * Copyright (c) 2021 james@firefly-iii.org
@@ -29,6 +30,7 @@ use FireflyIII\Events\UpdatedTransactionGroup;
 use FireflyIII\Helpers\Collector\GroupCollectorInterface;
 use FireflyIII\Models\TransactionGroup;
 use FireflyIII\Repositories\TransactionGroup\TransactionGroupRepositoryInterface;
+use FireflyIII\Support\JsonApi\Enrichments\TransactionGroupEnrichment;
 use FireflyIII\Transformers\TransactionGroupTransformer;
 use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
@@ -69,15 +71,8 @@ class UpdateController extends Controller
      */
     public function update(UpdateRequest $request, TransactionGroup $transactionGroup): JsonResponse
     {
-        app('log')->debug('Now in update routine for transaction group!');
+        app('log')->debug('Now in update routine for transaction group');
         $data             = $request->getAll();
-
-        // Fixes 8750.
-        $transactions     = $data['transactions'] ?? [];
-        foreach ($transactions as $index => $info) {
-            unset($data['transactions'][$index]['type']);
-        }
-
         $transactionGroup = $this->groupRepository->update($transactionGroup, $data);
         $manager          = $this->getManager();
 
@@ -104,6 +99,11 @@ class UpdateController extends Controller
         if (null === $selectedGroup) {
             throw new NotFoundHttpException();
         }
+
+        // enrich
+        $enrichment       = new TransactionGroupEnrichment();
+        $enrichment->setUser($admin);
+        $selectedGroup    = $enrichment->enrichSingle($selectedGroup);
 
         /** @var TransactionGroupTransformer $transformer */
         $transformer      = app(TransactionGroupTransformer::class);

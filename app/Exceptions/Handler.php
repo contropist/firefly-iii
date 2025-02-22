@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Exceptions;
 
+use Brick\Math\Exception\NumberFormatException;
 use FireflyIII\Jobs\MailError;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -66,6 +67,11 @@ class Handler extends ExceptionHandler
         ];
 
     /**
+     * Register the exception handling callbacks for the application.
+     */
+    public function register(): void {}
+
+    /**
      * Render an exception into an HTTP response. It's complex but lucky for us, we never use it because
      * Firefly III never crashes.
      *
@@ -73,21 +79,18 @@ class Handler extends ExceptionHandler
      *
      * @throws \Throwable
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings("PHPMD.NPathComplexity")
+     * @SuppressWarnings("PHPMD.CyclomaticComplexity")
      */
     public function render($request, \Throwable $e): Response
     {
         $expectsJson = $request->expectsJson();
-        // if the user requests anything /api/, assume the user wants to see JSON.
-        if (str_starts_with($request->getRequestUri(), '/api/')) {
-            app('log')->debug('API endpoint, always assume user wants JSON.');
-            $expectsJson = true;
-        }
 
         app('log')->debug('Now in Handler::render()');
+
         if ($e instanceof LaravelValidationException && $expectsJson) {
             // ignore it: controller will handle it.
+
             app('log')->debug(sprintf('Return to parent to handle LaravelValidationException(%d)', $e->status));
 
             return parent::render($request, $e);
@@ -122,7 +125,7 @@ class Handler extends ExceptionHandler
         if ($e instanceof BadRequestHttpException) {
             app('log')->debug('Return JSON BadRequestHttpException.');
 
-            return response()->json(['message' => $e->getMessage(), 'exception' => 'BadRequestHttpException'], 400);
+            return response()->json(['message' => $e->getMessage(), 'exception' => 'HttpException'], 400);
         }
 
         if ($e instanceof BadHttpHeaderException) {
@@ -131,12 +134,20 @@ class Handler extends ExceptionHandler
 
             return response()->json(['message' => $e->getMessage(), 'exception' => 'BadHttpHeaderException'], $e->statusCode);
         }
+        if (($e instanceof ValidationException || $e instanceof NumberFormatException) && $expectsJson) {
+            $errorCode = 422;
+
+            return response()->json(
+                ['message' => sprintf('Validation exception: %s', $e->getMessage()), 'errors' => ['field' => 'Field is invalid']],
+                $errorCode
+            );
+        }
 
         if ($expectsJson) {
             $errorCode = 500;
             $errorCode = $e instanceof MethodNotAllowedHttpException ? 405 : $errorCode;
 
-            $isDebug   = (bool)config('app.debug', false);
+            $isDebug   = (bool) config('app.debug', false);
             if ($isDebug) {
                 app('log')->debug(sprintf('Return JSON %s with debug.', get_class($e)));
 
@@ -154,7 +165,7 @@ class Handler extends ExceptionHandler
             app('log')->debug(sprintf('Return JSON %s.', get_class($e)));
 
             return response()->json(
-                ['message' => sprintf('Internal Firefly III Exception: %s', $e->getMessage()), 'exception' => get_class($e)],
+                ['message' => sprintf('Internal Firefly III Exception: %s', $e->getMessage()), 'exception' => 'UndisclosedException'],
                 $errorCode
             );
         }
@@ -193,7 +204,7 @@ class Handler extends ExceptionHandler
      */
     public function report(\Throwable $e): void
     {
-        $doMailError = (bool)config('firefly.send_error_message');
+        $doMailError = (bool) config('firefly.send_error_message');
         if ($this->shouldntReportLocal($e) || !$doMailError) {
             parent::report($e);
 
@@ -229,7 +240,7 @@ class Handler extends ExceptionHandler
 
         // create job that will mail.
         $ipAddress   = request()->ip() ?? '0.0.0.0';
-        $job         = new MailError($userData, (string)config('firefly.site_owner'), $ipAddress, $data);
+        $job         = new MailError($userData, (string) config('firefly.site_owner'), $ipAddress, $data);
         dispatch($job);
 
         parent::report($e);

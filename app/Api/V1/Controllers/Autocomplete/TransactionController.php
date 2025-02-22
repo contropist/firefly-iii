@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionController.php
  * Copyright (c) 2020 james@firefly-iii.org
@@ -25,6 +26,7 @@ namespace FireflyIII\Api\V1\Controllers\Autocomplete;
 
 use FireflyIII\Api\V1\Controllers\Controller;
 use FireflyIII\Api\V1\Requests\Autocomplete\AutocompleteRequest;
+use FireflyIII\Enums\UserRoleEnum;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use FireflyIII\Repositories\TransactionGroup\TransactionGroupRepositoryInterface;
@@ -40,6 +42,8 @@ class TransactionController extends Controller
     private TransactionGroupRepositoryInterface $groupRepository;
     private JournalRepositoryInterface          $repository;
 
+    protected array $acceptedRoles = [UserRoleEnum::READ_ONLY];
+
     /**
      * TransactionController constructor.
      */
@@ -50,10 +54,12 @@ class TransactionController extends Controller
             function ($request, $next) {
                 /** @var User $user */
                 $user                  = auth()->user();
+                $userGroup             = $this->validateUserGroup($request);
                 $this->repository      = app(JournalRepositoryInterface::class);
                 $this->groupRepository = app(TransactionGroupRepositoryInterface::class);
                 $this->repository->setUser($user);
                 $this->groupRepository->setUser($user);
+                $this->groupRepository->setUserGroup($userGroup);
 
                 return $next($request);
             }
@@ -76,14 +82,14 @@ class TransactionController extends Controller
         /** @var TransactionJournal $journal */
         foreach ($filtered as $journal) {
             $array[] = [
-                'id'                   => (string)$journal->id,
-                'transaction_group_id' => (string)$journal->transaction_group_id,
+                'id'                   => (string) $journal->id,
+                'transaction_group_id' => (string) $journal->transaction_group_id,
                 'name'                 => $journal->description,
                 'description'          => $journal->description,
             ];
         }
 
-        return response()->json($array);
+        return response()->api($array);
     }
 
     /**
@@ -96,7 +102,7 @@ class TransactionController extends Controller
         $result = new Collection();
         if (is_numeric($data['query'])) {
             // search for group, not journal.
-            $firstResult = $this->groupRepository->find((int)$data['query']);
+            $firstResult = $this->groupRepository->find((int) $data['query']);
             if (null !== $firstResult) {
                 // group may contain multiple journals, each a result:
                 foreach ($firstResult->transactionJournals as $journal) {
@@ -114,13 +120,13 @@ class TransactionController extends Controller
         /** @var TransactionJournal $journal */
         foreach ($result as $journal) {
             $array[] = [
-                'id'                   => (string)$journal->id,
-                'transaction_group_id' => (string)$journal->transaction_group_id,
+                'id'                   => (string) $journal->id,
+                'transaction_group_id' => (string) $journal->transaction_group_id,
                 'name'                 => sprintf('#%d: %s', $journal->transaction_group_id, $journal->description),
                 'description'          => sprintf('#%d: %s', $journal->transaction_group_id, $journal->description),
             ];
         }
 
-        return response()->json($array);
+        return response()->api($array);
     }
 }

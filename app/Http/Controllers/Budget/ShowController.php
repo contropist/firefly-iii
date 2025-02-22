@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ShowController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -24,12 +25,12 @@ declare(strict_types=1);
 namespace FireflyIII\Http\Controllers\Budget;
 
 use Carbon\Carbon;
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Helpers\Collector\GroupCollectorInterface;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Models\Budget;
 use FireflyIII\Models\BudgetLimit;
-use FireflyIII\Models\TransactionType;
 use FireflyIII\Repositories\Budget\BudgetRepositoryInterface;
 use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use FireflyIII\Support\Http\Controllers\AugumentData;
@@ -58,7 +59,7 @@ class ShowController extends Controller
         parent::__construct();
         $this->middleware(
             function ($request, $next) {
-                app('view')->share('title', (string)trans('firefly.budgets'));
+                app('view')->share('title', (string) trans('firefly.budgets'));
                 app('view')->share('mainTitleIcon', 'fa-pie-chart');
                 $this->journalRepos = app(JournalRepositoryInterface::class);
                 $this->repository   = app(BudgetRepositoryInterface::class);
@@ -77,10 +78,11 @@ class ShowController extends Controller
      */
     public function noBudget(Request $request, ?Carbon $start = null, ?Carbon $end = null)
     {
-        // @var Carbon $start
         $start ??= session('start');
-        // @var Carbon $end
         $end   ??= session('end');
+
+        /** @var Carbon $start */
+        /** @var Carbon $end */
         $subTitle  = trans(
             'firefly.without_budget_between',
             ['start' => $start->isoFormat($this->monthAndDayFormat), 'end' => $end->isoFormat($this->monthAndDayFormat)]
@@ -90,12 +92,12 @@ class ShowController extends Controller
         $first     = $this->journalRepos->firstNull();
         $firstDate = null !== $first ? $first->date : $start;
         $periods   = $this->getNoBudgetPeriodOverview($firstDate, $end);
-        $page      = (int)$request->get('page');
-        $pageSize  = (int)app('preferences')->get('listPageSize', 50)->data;
+        $page      = (int) $request->get('page');
+        $pageSize  = (int) app('preferences')->get('listPageSize', 50)->data;
 
         /** @var GroupCollectorInterface $collector */
         $collector = app(GroupCollectorInterface::class);
-        $collector->setRange($start, $end)->setTypes([TransactionType::WITHDRAWAL])->setLimit($pageSize)->setPage($page)
+        $collector->setRange($start, $end)->setTypes([TransactionTypeEnum::WITHDRAWAL->value])->setLimit($pageSize)->setPage($page)
             ->withoutBudget()->withAccountInformation()->withCategoryInformation()
         ;
         $groups    = $collector->getPaginatedGroups();
@@ -111,16 +113,16 @@ class ShowController extends Controller
      */
     public function noBudgetAll(Request $request)
     {
-        $subTitle  = (string)trans('firefly.all_journals_without_budget');
+        $subTitle  = (string) trans('firefly.all_journals_without_budget');
         $first     = $this->journalRepos->firstNull();
         $start     = null === $first ? new Carbon() : $first->date;
         $end       = today(config('app.timezone'));
-        $page      = (int)$request->get('page');
-        $pageSize  = (int)app('preferences')->get('listPageSize', 50)->data;
+        $page      = (int) $request->get('page');
+        $pageSize  = (int) app('preferences')->get('listPageSize', 50)->data;
 
         /** @var GroupCollectorInterface $collector */
         $collector = app(GroupCollectorInterface::class);
-        $collector->setRange($start, $end)->setTypes([TransactionType::WITHDRAWAL])->setLimit($pageSize)->setPage($page)
+        $collector->setRange($start, $end)->setTypes([TransactionTypeEnum::WITHDRAWAL->value])->setLimit($pageSize)->setPage($page)
             ->withoutBudget()->withAccountInformation()->withCategoryInformation()
         ;
         $groups    = $collector->getPaginatedGroups();
@@ -139,8 +141,8 @@ class ShowController extends Controller
         /** @var Carbon $allStart */
         $allStart    = session('first', today(config('app.timezone'))->startOfYear());
         $allEnd      = today();
-        $page        = (int)$request->get('page');
-        $pageSize    = (int)app('preferences')->get('listPageSize', 50)->data;
+        $page        = (int) $request->get('page');
+        $pageSize    = (int) app('preferences')->get('listPageSize', 50)->data;
         $limits      = $this->getLimits($budget, $allStart, $allEnd);
         $repetition  = null;
         $attachments = $this->repository->getAttachments($budget);
@@ -155,7 +157,7 @@ class ShowController extends Controller
         $groups      = $collector->getPaginatedGroups();
         $groups->setPath(route('budgets.show', [$budget->id]));
 
-        $subTitle    = (string)trans('firefly.all_journals_for_budget', ['name' => $budget->name]);
+        $subTitle    = (string) trans('firefly.all_journals_for_budget', ['name' => $budget->name]);
 
         return view('budgets.show', compact('limits', 'attachments', 'budget', 'repetition', 'groups', 'subTitle'));
     }
@@ -173,8 +175,8 @@ class ShowController extends Controller
             throw new FireflyException('This budget limit is not part of this budget.');
         }
 
-        $page        = (int)$request->get('page');
-        $pageSize    = (int)app('preferences')->get('listPageSize', 50)->data;
+        $page        = (int) $request->get('page');
+        $pageSize    = (int) app('preferences')->get('listPageSize', 50)->data;
         $subTitle    = trans(
             'firefly.budget_in_period',
             [

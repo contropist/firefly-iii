@@ -26,6 +26,8 @@ namespace FireflyIII\Support\Twig;
 use FireflyIII\Models\Account as AccountModel;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
+use FireflyIII\Support\Facades\Amount;
+use Illuminate\Support\Facades\Log;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
 use Twig\TwigFunction;
@@ -48,7 +50,7 @@ class AmountFormat extends AbstractExtension
         return new TwigFilter(
             'formatAmount',
             static function (string $string): string {
-                $currency = app('amount')->getDefaultCurrency();
+                $currency = app('amount')->getNativeCurrency();
 
                 return app('amount')->formatAnything($currency, $string, true);
             },
@@ -61,7 +63,7 @@ class AmountFormat extends AbstractExtension
         return new TwigFilter(
             'formatAmountPlain',
             static function (string $string): string {
-                $currency = app('amount')->getDefaultCurrency();
+                $currency = app('amount')->getNativeCurrency();
 
                 return app('amount')->formatAnything($currency, $string, false);
             },
@@ -75,6 +77,7 @@ class AmountFormat extends AbstractExtension
             $this->formatAmountByAccount(),
             $this->formatAmountBySymbol(),
             $this->formatAmountByCurrency(),
+            $this->formatAmountByCode(),
         ];
     }
 
@@ -92,7 +95,32 @@ class AmountFormat extends AbstractExtension
 
                 /** @var AccountRepositoryInterface $accountRepos */
                 $accountRepos = app(AccountRepositoryInterface::class);
-                $currency     = $accountRepos->getAccountCurrency($account) ?? app('amount')->getDefaultCurrency();
+                $currency     = $accountRepos->getAccountCurrency($account) ?? app('amount')->getNativeCurrency();
+
+                return app('amount')->formatAnything($currency, $amount, $coloured);
+            },
+            ['is_safe' => ['html']]
+        );
+    }
+
+    /**
+     * Use the code to format a currency.
+     */
+    protected function formatAmountByCode(): TwigFunction
+    {
+        // formatAmountByCode
+        return new TwigFunction(
+            'formatAmountByCode',
+            static function (string $amount, string $code, ?bool $coloured = null): string {
+                $coloured ??= true;
+
+                /** @var null|TransactionCurrency $currency */
+                $currency = TransactionCurrency::whereCode($code)->first();
+                if (null === $currency) {
+                    Log::error(sprintf('Could not find currency with code "%s". Fallback to native currency.', $code));
+                    $currency = Amount::getNativeCurrency();
+                    Log::error(sprintf('Fallback currency is "%s".', $currency->code));
+                }
 
                 return app('amount')->formatAnything($currency, $amount, $coloured);
             },

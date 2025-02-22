@@ -26,9 +26,9 @@ namespace FireflyIII\Api\V2\Controllers\Summary;
 
 use FireflyIII\Api\V2\Controllers\Controller;
 use FireflyIII\Api\V2\Request\Generic\SingleDateRequest;
+use FireflyIII\Enums\AccountTypeEnum;
 use FireflyIII\Helpers\Report\NetWorthInterface;
 use FireflyIII\Models\Account;
-use FireflyIII\Models\AccountType;
 use FireflyIII\Repositories\UserGroups\Account\AccountRepositoryInterface;
 use FireflyIII\Support\Http\Api\ValidatesUserGroupTrait;
 use Illuminate\Http\JsonResponse;
@@ -52,10 +52,8 @@ class NetWorthController extends Controller
                 $this->repository = app(AccountRepositoryInterface::class);
                 // new way of user group validation
                 $userGroup        = $this->validateUserGroup($request);
-                if (null !== $userGroup) {
-                    $this->netWorth->setUserGroup($userGroup);
-                    $this->repository->setUserGroup($userGroup);
-                }
+                $this->netWorth->setUserGroup($userGroup);
+                $this->repository->setUserGroup($userGroup);
 
                 return $next($request);
             }
@@ -69,7 +67,7 @@ class NetWorthController extends Controller
     public function get(SingleDateRequest $request): JsonResponse
     {
         $date     = $request->getDate();
-        $accounts = $this->repository->getAccountsByType([AccountType::ASSET, AccountType::DEFAULT, AccountType::LOAN, AccountType::DEBT, AccountType::MORTGAGE]);
+        $accounts = $this->repository->getAccountsByType([AccountTypeEnum::ASSET->value, AccountTypeEnum::DEFAULT->value, AccountTypeEnum::LOAN->value, AccountTypeEnum::DEBT->value, AccountTypeEnum::MORTGAGE->value]);
 
         // filter list on preference of being included.
         $filtered = $accounts->filter(

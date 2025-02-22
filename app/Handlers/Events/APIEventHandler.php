@@ -1,4 +1,5 @@
 <?php
+
 /**
  * APIEventHandler.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -42,12 +43,12 @@ class APIEventHandler
 
         /** @var UserRepositoryInterface $repository */
         $repository = app(UserRepositoryInterface::class);
-        $user       = $repository->find((int)$event->userId);
+        $user       = $repository->find((int) $event->userId);
 
         if (null !== $user) {
             try {
                 Notification::send($user, new NewAccessToken());
-            } catch (\Exception $e) { // @phpstan-ignore-line
+            } catch (\Exception $e) {
                 $message = $e->getMessage();
                 if (str_contains($message, 'Bcc')) {
                     app('log')->warning('[Bcc] Could not send notification. Please validate your email settings, use the .env.example file as a guide.');

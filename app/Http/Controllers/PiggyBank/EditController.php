@@ -28,7 +28,6 @@ use FireflyIII\Helpers\Attachments\AttachmentHelperInterface;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Http\Requests\PiggyBankUpdateRequest;
 use FireflyIII\Models\PiggyBank;
-use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Repositories\PiggyBank\PiggyBankRepositoryInterface;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Http\RedirectResponse;
@@ -41,7 +40,6 @@ use Illuminate\View\View;
  */
 class EditController extends Controller
 {
-    private AccountRepositoryInterface   $accountRepository;
     private AttachmentHelperInterface    $attachments;
     private PiggyBankRepositoryInterface $piggyRepos;
 
@@ -54,12 +52,11 @@ class EditController extends Controller
 
         $this->middleware(
             function ($request, $next) {
-                app('view')->share('title', (string)trans('firefly.piggyBanks'));
+                app('view')->share('title', (string) trans('firefly.piggyBanks'));
                 app('view')->share('mainTitleIcon', 'fa-bullseye');
 
-                $this->attachments       = app(AttachmentHelperInterface::class);
-                $this->piggyRepos        = app(PiggyBankRepositoryInterface::class);
-                $this->accountRepository = app(AccountRepositoryInterface::class);
+                $this->attachments = app(AttachmentHelperInterface::class);
+                $this->piggyRepos  = app(PiggyBankRepositoryInterface::class);
 
                 return $next($request);
             }
@@ -73,28 +70,27 @@ class EditController extends Controller
      */
     public function edit(PiggyBank $piggyBank)
     {
-        $subTitle     = (string)trans('firefly.update_piggy_title', ['name' => $piggyBank->name]);
+        $subTitle     = (string) trans('firefly.update_piggy_title', ['name' => $piggyBank->name]);
         $subTitleIcon = 'fa-pencil';
         $note         = $piggyBank->notes()->first();
         // Flash some data to fill the form.
-        $targetDate   = $piggyBank->targetdate?->format('Y-m-d');
-        $startDate    = $piggyBank->startdate?->format('Y-m-d');
-        $currency     = $this->accountRepository->getAccountCurrency($piggyBank->account);
-        if (null === $currency) {
-            $currency = app('amount')->getDefaultCurrency();
-        }
+        $targetDate   = $piggyBank->target_date?->format('Y-m-d');
+        $startDate    = $piggyBank->start_date?->format('Y-m-d');
 
         $preFilled    = [
-            'name'         => $piggyBank->name,
-            'account_id'   => $piggyBank->account_id,
-            'targetamount' => app('steam')->bcround($piggyBank->targetamount, $currency->decimal_places),
-            'targetdate'   => $targetDate,
-            'startdate'    => $startDate,
-            'object_group' => null !== $piggyBank->objectGroups->first() ? $piggyBank->objectGroups->first()->title : '',
-            'notes'        => null === $note ? '' : $note->text,
+            'name'          => $piggyBank->name,
+            'target_amount' => app('steam')->bcround($piggyBank->target_amount, $piggyBank->transactionCurrency->decimal_places),
+            'target_date'   => $targetDate,
+            'start_date'    => $startDate,
+            'accounts'      => [],
+            'object_group'  => null !== $piggyBank->objectGroups->first() ? $piggyBank->objectGroups->first()->title : '',
+            'notes'         => null === $note ? '' : $note->text,
         ];
-        if (0 === bccomp($piggyBank->targetamount, '0')) {
-            $preFilled['targetamount'] = '';
+        foreach ($piggyBank->accounts as $account) {
+            $preFilled['accounts'][] = $account->id;
+        }
+        if (0 === bccomp($piggyBank->target_amount, '0')) {
+            $preFilled['target_amount'] = '';
         }
         session()->flash('preFilled', $preFilled);
 
@@ -117,7 +113,7 @@ class EditController extends Controller
         $data      = $request->getPiggyBankData();
         $piggyBank = $this->piggyRepos->update($piggyBank, $data);
 
-        session()->flash('success', (string)trans('firefly.updated_piggy_bank', ['name' => $piggyBank->name]));
+        session()->flash('success', (string) trans('firefly.updated_piggy_bank', ['name' => $piggyBank->name]));
         app('preferences')->mark();
 
         // store new attachment(s):
@@ -128,7 +124,7 @@ class EditController extends Controller
         }
         if (null !== $files && auth()->user()->hasRole('demo')) {
             Log::channel('audit')->warning(sprintf('The demo user is trying to upload attachments in %s.', __METHOD__));
-            session()->flash('info', (string)trans('firefly.no_att_demo_user'));
+            session()->flash('info', (string) trans('firefly.no_att_demo_user'));
         }
 
         if (count($this->attachments->getMessages()->get('attachments')) > 0) {
@@ -136,7 +132,7 @@ class EditController extends Controller
         }
         $redirect  = redirect($this->getPreviousUrl('piggy-banks.edit.url'));
 
-        if (1 === (int)$request->get('return_to_edit')) {
+        if (1 === (int) $request->get('return_to_edit')) {
             session()->put('piggy-banks.edit.fromUpdate', true);
 
             $redirect = redirect(route('piggy-banks.edit', [$piggyBank->id]));

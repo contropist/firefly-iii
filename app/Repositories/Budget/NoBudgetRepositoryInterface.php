@@ -1,4 +1,5 @@
 <?php
+
 /**
  * NoBudgetRepositoryInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -40,11 +41,6 @@ interface NoBudgetRepositoryInterface
     public function getNoBudgetPeriodReport(Collection $accounts, Carbon $start, Carbon $end): array;
 
     public function setUser(null|Authenticatable|User $user): void;
-
-    /**
-     * @deprecated
-     */
-    public function spentInPeriodWoBudgetMc(Collection $accounts, Carbon $start, Carbon $end): array;
 
     public function sumExpenses(Carbon $start, Carbon $end, ?Collection $accounts = null, ?TransactionCurrency $currency = null): array;
 }

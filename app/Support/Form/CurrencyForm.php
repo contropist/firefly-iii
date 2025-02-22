@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CurrencyForm.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -49,6 +50,8 @@ class CurrencyForm
 
     /**
      * @throws FireflyException
+     *
+     * @phpstan-param view-string $view
      */
     protected function currencyField(string $name, string $view, mixed $value = null, ?array $options = null): string
     {
@@ -57,7 +60,7 @@ class CurrencyForm
         $classes         = $this->getHolderClasses($name);
         $value           = $this->fillFieldValue($name, $value);
         $options['step'] = 'any';
-        $defaultCurrency = $options['currency'] ?? app('amount')->getDefaultCurrency();
+        $defaultCurrency = $options['currency'] ?? app('amount')->getNativeCurrency();
 
         /** @var Collection $currencies */
         $currencies      = app('amount')->getCurrencies();
@@ -68,7 +71,7 @@ class CurrencyForm
             $preFilled = [];
         }
         $key             = 'amount_currency_id_'.$name;
-        $sentCurrencyId  = array_key_exists($key, $preFilled) ? (int)$preFilled[$key] : $defaultCurrency->id;
+        $sentCurrencyId  = array_key_exists($key, $preFilled) ? (int) $preFilled[$key] : $defaultCurrency->id;
 
         app('log')->debug(sprintf('Sent currency ID is %d', $sentCurrencyId));
 
@@ -125,7 +128,7 @@ class CurrencyForm
         $classes         = $this->getHolderClasses($name);
         $value           = $this->fillFieldValue($name, $value);
         $options['step'] = 'any';
-        $defaultCurrency = $options['currency'] ?? app('amount')->getDefaultCurrency();
+        $defaultCurrency = $options['currency'] ?? app('amount')->getNativeCurrency();
 
         /** @var Collection $currencies */
         $currencies      = app('amount')->getAllCurrencies();
@@ -137,7 +140,7 @@ class CurrencyForm
             $preFilled = [];
         }
         $key             = 'amount_currency_id_'.$name;
-        $sentCurrencyId  = array_key_exists($key, $preFilled) ? (int)$preFilled[$key] : $defaultCurrency->id;
+        $sentCurrencyId  = array_key_exists($key, $preFilled) ? (int) $preFilled[$key] : $defaultCurrency->id;
 
         app('log')->debug(sprintf('Sent currency ID is %d', $sentCurrencyId));
 
@@ -203,7 +206,7 @@ class CurrencyForm
         // get all currencies:
         $list          = $currencyRepos->get();
         $array         = [
-            0 => (string)trans('firefly.no_currency'),
+            0 => (string) trans('firefly.no_currency'),
         ];
 
         /** @var TransactionCurrency $currency */

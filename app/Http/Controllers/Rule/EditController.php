@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EditController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -57,7 +58,7 @@ class EditController extends Controller
 
         $this->middleware(
             function ($request, $next) {
-                app('view')->share('title', (string)trans('firefly.rules'));
+                app('view')->share('title', (string) trans('firefly.rules'));
                 app('view')->share('mainTitleIcon', 'fa-random');
 
                 $this->ruleRepos = app(RuleRepositoryInterface::class);
@@ -82,17 +83,32 @@ class EditController extends Controller
         $oldTriggers    = [];
 
         // build triggers from query, if present.
-        $query          = (string)$request->get('from_query');
+        $query          = (string) $request->get('from_query');
         if ('' !== $query) {
-            $search      = app(SearchInterface::class);
+            $search        = app(SearchInterface::class);
             $search->parseQuery($query);
-            $words       = $search->getWordsAsString();
-            $operators   = $search->getOperators()->toArray();
-            if ('' !== $words) {
-                session()->flash('warning', trans('firefly.rule_from_search_words', ['string' => $words]));
-                $operators[] = ['type' => 'description_contains', 'value' => $words];
+            $words         = $search->getWords();
+            $excludedWords = $search->getExcludedWords();
+            $operators     = $search->getOperators()->toArray();
+            if (count($words) > 0) {
+                session()->flash('warning', trans('firefly.rule_from_search_words', ['string' => implode('', $words)]));
+                foreach ($words as $word) {
+                    $operators[] = [
+                        'type'  => 'description_contains',
+                        'value' => $word,
+                    ];
+                }
             }
-            $oldTriggers = $this->parseFromOperators($operators);
+            if (count($excludedWords) > 0) {
+                session()->flash('warning', trans('firefly.rule_from_search_words', ['string' => implode('', $excludedWords)]));
+                foreach ($excludedWords as $excludedWord) {
+                    $operators[] = [
+                        'type'  => '-description_contains',
+                        'value' => $excludedWord,
+                    ];
+                }
+            }
+            $oldTriggers   = $this->parseFromOperators($operators);
         }
         // has old input?
         if (null !== $request->old() && is_array($request->old()) && count($request->old()) > 0) {
@@ -112,14 +128,14 @@ class EditController extends Controller
 
         $hasOldInput    = null !== $request->old('_token');
         $preFilled      = [
-            'active'          => $hasOldInput ? (bool)$request->old('active') : $rule->active,
-            'stop_processing' => $hasOldInput ? (bool)$request->old('stop_processing') : $rule->stop_processing,
-            'strict'          => $hasOldInput ? (bool)$request->old('strict') : $rule->strict,
+            'active'          => $hasOldInput ? (bool) $request->old('active') : $rule->active,
+            'stop_processing' => $hasOldInput ? (bool) $request->old('stop_processing') : $rule->stop_processing,
+            'strict'          => $hasOldInput ? (bool) $request->old('strict') : $rule->strict,
         ];
 
         // get rule trigger for update / store-journal:
         $primaryTrigger = $this->ruleRepos->getPrimaryTrigger($rule);
-        $subTitle       = (string)trans('firefly.edit_rule', ['title' => $rule->title]);
+        $subTitle       = (string) trans('firefly.edit_rule', ['title' => $rule->title]);
 
         // put previous url in session if not redirect from store (not "return_to_edit").
         if (true !== session('rules.edit.fromUpdate')) {
@@ -143,7 +159,7 @@ class EditController extends Controller
         $triggers        = [];
         foreach ($operators as $key => $operator) {
             if ('user_action' !== $key && false === $operator['alias']) {
-                $triggers[$key] = (string)trans(sprintf('firefly.rule_trigger_%s_choice', $key));
+                $triggers[$key] = (string) trans(sprintf('firefly.rule_trigger_%s_choice', $key));
             }
         }
         asort($triggers);
@@ -185,10 +201,10 @@ class EditController extends Controller
 
         $this->ruleRepos->update($rule, $data);
 
-        session()->flash('success', (string)trans('firefly.updated_rule', ['title' => $rule->title]));
+        session()->flash('success', (string) trans('firefly.updated_rule', ['title' => $rule->title]));
         app('preferences')->mark();
         $redirect = redirect($this->getPreviousUrl('rules.edit.url'));
-        if (1 === (int)$request->get('return_to_edit')) {
+        if (1 === (int) $request->get('return_to_edit')) {
             session()->put('rules.edit.fromUpdate', true);
 
             $redirect = redirect(route('rules.edit', [$rule->id]))->withInput(['return_to_edit' => 1]);

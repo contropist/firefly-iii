@@ -23,6 +23,9 @@ declare(strict_types=1);
 
 namespace Tests\integration;
 
+use FireflyIII\Models\UserGroup;
+use FireflyIII\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Tests\integration\Traits\CollectsValues;
 
@@ -33,8 +36,10 @@ abstract class TestCase extends BaseTestCase
 {
     use CollectsValues;
     use CreatesApplication;
+    use RefreshDatabase;
 
     protected const MAX_ITERATIONS = 2;
+    protected $seed                = true;
 
     public function dateRangeProvider(): array
     {
@@ -47,5 +52,16 @@ abstract class TestCase extends BaseTestCase
             'one year'     => ['1Y'],
             'custom range' => ['custom'],
         ];
+    }
+
+    protected function createAuthenticatedUser(): User
+    {
+        $group = UserGroup::create(['title' => 'test@email.com']);
+
+        return User::create([
+            'email'         => 'test@email.com',
+            'password'      => 'password',
+            'user_group_id' => $group->id,
+        ]);
     }
 }

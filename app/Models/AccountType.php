@@ -23,51 +23,55 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Carbon\Carbon;
-use Eloquent;
+use Deprecated;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/**
- * FireflyIII\Models\AccountType
- *
- * @property int                  $id
- * @property null|Carbon          $created_at
- * @property null|Carbon          $updated_at
- * @property string               $type
- * @property Account[]|Collection $accounts
- * @property null|int             $accounts_count
- *
- * @method static Builder|AccountType newModelQuery()
- * @method static Builder|AccountType newQuery()
- * @method static Builder|AccountType query()
- * @method static Builder|AccountType whereCreatedAt($value)
- * @method static Builder|AccountType whereId($value)
- * @method static Builder|AccountType whereType($value)
- * @method static Builder|AccountType whereUpdatedAt($value)
- *
- * @mixin Eloquent
- */
 class AccountType extends Model
 {
     use ReturnsIntegerIdTrait;
 
+    #[\Deprecated] /** @deprecated */
     public const string ASSET            = 'Asset account';
+
+    #[\Deprecated] /** @deprecated */
     public const string BENEFICIARY      = 'Beneficiary account';
+
+    #[\Deprecated] /** @deprecated */
     public const string CASH             = 'Cash account';
+
+    #[\Deprecated] /** @deprecated */
     public const string CREDITCARD       = 'Credit card';
+
+    #[\Deprecated] /** @deprecated */
     public const string DEBT             = 'Debt';
+
+    #[\Deprecated] /** @deprecated */
     public const string DEFAULT          = 'Default account';
+
+    #[\Deprecated] /** @deprecated */
     public const string EXPENSE          = 'Expense account';
+
+    #[\Deprecated] /** @deprecated */
     public const string IMPORT           = 'Import account';
+
+    #[\Deprecated] /** @deprecated */
     public const string INITIAL_BALANCE  = 'Initial balance account';
+
+    #[\Deprecated] /** @deprecated */
     public const string LIABILITY_CREDIT = 'Liability credit account';
+
+    #[\Deprecated] /** @deprecated */
     public const string LOAN             = 'Loan';
+
+    #[\Deprecated] /** @deprecated */
     public const string MORTGAGE         = 'Mortgage';
+
+    #[\Deprecated] /** @deprecated */
     public const string RECONCILIATION   = 'Reconciliation account';
+
+    #[\Deprecated] /** @deprecated */
     public const string REVENUE          = 'Revenue account';
 
     protected $casts
@@ -81,5 +85,12 @@ class AccountType extends Model
     public function accounts(): HasMany
     {
         return $this->hasMany(Account::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            // 'type' => AccountTypeEnum::class,
+        ];
     }
 }

@@ -36,11 +36,11 @@ class LessThanPiggyTarget implements ValidationRule
      */
     public function message(): string
     {
-        return (string)trans('validation.current_target_amount');
+        return (string) trans('validation.current_target_amount');
     }
 
     /**
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function validate(string $attribute, mixed $value, \Closure $fail): void
     {

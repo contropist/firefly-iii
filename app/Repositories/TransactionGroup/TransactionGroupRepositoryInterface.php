@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionGroupRepositoryInterface.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -27,6 +28,7 @@ use FireflyIII\Exceptions\DuplicateTransactionException;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Location;
 use FireflyIII\Models\TransactionGroup;
+use FireflyIII\Models\UserGroup;
 use FireflyIII\Support\NullArrayObject;
 use FireflyIII\User;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -97,6 +99,8 @@ interface TransactionGroupRepositoryInterface
     public function getTags(int $journalId): array;
 
     public function setUser(null|Authenticatable|User $user): void;
+
+    public function setUserGroup(UserGroup $userGroup): void;
 
     /**
      * Create a new transaction group.

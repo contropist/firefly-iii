@@ -24,9 +24,17 @@ declare(strict_types=1);
 
 namespace FireflyIII\Notifications\User;
 
+use FireflyIII\Notifications\ReturnsAvailableChannels;
+use FireflyIII\Notifications\ReturnsSettings;
+use FireflyIII\Support\Facades\Steam;
+use FireflyIII\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Messages\SlackMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Request;
+use NotificationChannels\Pushover\PushoverMessage;
+use Ntfy\Message;
 
 /**
  * Class UserNewPassword
@@ -37,57 +45,64 @@ class UserNewPassword extends Notification
 
     private string $url;
 
-    /**
-     * Create a new notification instance.
-     */
     public function __construct(string $url)
     {
         $this->url = $url;
     }
 
     /**
-     * Get the array representation of the notification.
-     *
-     * @param mixed $notifiable
-     *
-     * @return array
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
-    public function toArray($notifiable)
+    public function toArray(User $notifiable): array
     {
         return [
         ];
     }
 
     /**
-     * Get the mail representation of the notification.
-     *
-     * @param mixed $notifiable
-     *
-     * @return MailMessage
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
-    public function toMail($notifiable)
+    public function toMail(User $notifiable): MailMessage
     {
+        $ip        = Request::ip();
+        $host      = Steam::getHostName($ip);
+        $userAgent = Request::userAgent();
+        $time      = now(config('app.timezone'))->isoFormat((string) trans('config.date_time_js'));
+
         return (new MailMessage())
-            ->markdown('emails.password', ['url' => $this->url])
-            ->subject((string)trans('email.reset_pw_subject'))
+            ->markdown('emails.password', ['url' => $this->url, 'ip' => $ip, 'host' => $host, 'userAgent' => $userAgent, 'time' => $time])
+            ->subject((string) trans('email.reset_pw_subject'))
         ;
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @param mixed $notifiable
-     *
-     * @return array
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function via($notifiable)
+    public function toNtfy(User $notifiable): Message
     {
-        return ['mail'];
+        $settings = ReturnsSettings::getSettings('ntfy', 'user', $notifiable);
+        $message  = new Message();
+        $message->topic($settings['ntfy_topic']);
+        $message->body((string) trans('email.reset_pw_message'));
+
+        return $message;
+    }
+
+    /**
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
+     */
+    public function toPushover(User $notifiable): PushoverMessage
+    {
+        return PushoverMessage::create((string) trans('email.reset_pw_message'));
+    }
+
+    /**
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
+     */
+    public function toSlack(User $notifiable): SlackMessage
+    {
+        return new SlackMessage()->content((string) trans('email.reset_pw_message'));
+    }
+
+    public function via(User $notifiable): array
+    {
+        return ReturnsAvailableChannels::returnChannels('user', $notifiable);
     }
 }

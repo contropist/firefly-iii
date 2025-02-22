@@ -24,47 +24,14 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Carbon\Carbon;
-use Eloquent;
+use FireflyIII\Casts\SeparateTimezoneCaster;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use FireflyIII\Support\Models\ReturnsIntegerUserIdTrait;
 use FireflyIII\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-/**
- * Class InvitedUser
- *
- * @property User $user
- *
- * @method static Builder|InvitedUser newModelQuery()
- * @method static Builder|InvitedUser newQuery()
- * @method static Builder|InvitedUser query()
- *
- * @property int         $id
- * @property null|Carbon $created_at
- * @property null|Carbon $updated_at
- * @property int         $user_id
- * @property string      $email
- * @property string      $invite_code
- * @property Carbon      $expires
- * @property bool        $redeemed
- *
- * @method static Builder|InvitedUser whereCreatedAt($value)
- * @method static Builder|InvitedUser whereEmail($value)
- * @method static Builder|InvitedUser whereExpires($value)
- * @method static Builder|InvitedUser whereId($value)
- * @method static Builder|InvitedUser whereInviteCode($value)
- * @method static Builder|InvitedUser whereRedeemed($value)
- * @method static Builder|InvitedUser whereUpdatedAt($value)
- * @method static Builder|InvitedUser whereUserId($value)
- *
- * @property mixed $user_group_id
- *
- * @mixin Eloquent
- */
 class InvitedUser extends Model
 {
     use ReturnsIntegerIdTrait;
@@ -72,10 +39,12 @@ class InvitedUser extends Model
 
     protected $casts
                         = [
-            'expires'  => 'datetime',
-            'redeemed' => 'boolean',
+            'expires'                      => SeparateTimezoneCaster::class,
+            'redeemed'                     => 'boolean',
+            'user_id'                      => 'integer',
+            'user_group_id'                => 'integer',
         ];
-    protected $fillable = ['user_id', 'email', 'invite_code', 'expires', 'redeemed'];
+    protected $fillable = ['user_group_id', 'user_id', 'email', 'invite_code', 'expires', 'expires_tz', 'redeemed'];
 
     /**
      * Route binder. Converts the key in the URL to the specified object (or throw 404).
@@ -83,7 +52,7 @@ class InvitedUser extends Model
     public static function routeBinder(string $value): self
     {
         if (auth()->check()) {
-            $attemptId = (int)$value;
+            $attemptId = (int) $value;
 
             /** @var null|InvitedUser $attempt */
             $attempt   = self::find($attemptId);

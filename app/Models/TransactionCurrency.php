@@ -23,72 +23,24 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Carbon\Carbon;
-use Eloquent;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use FireflyIII\User;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Query\Builder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-/**
- * FireflyIII\Models\TransactionCurrency
- *
- * @property int                             $id
- * @property null|Carbon                     $created_at
- * @property null|Carbon                     $updated_at
- * @property null|Carbon                     $deleted_at
- * @property bool                            $enabled
- * @property null|bool                       $userGroupDefault
- * @property null|bool                       $userGroupEnabled
- * @property string                          $code
- * @property string                          $name
- * @property string                          $symbol
- * @property int                             $decimal_places
- * @property BudgetLimit[]|Collection        $budgetLimits
- * @property null|int                        $budget_limits_count
- * @property Collection|TransactionJournal[] $transactionJournals
- * @property null|int                        $transaction_journals_count
- * @property Collection|Transaction[]        $transactions
- * @property null|int                        $transactions_count
- *
- * @method static \Illuminate\Database\Eloquent\Builder|TransactionCurrency newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|TransactionCurrency newQuery()
- * @method static Builder|TransactionCurrency                               onlyTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder|TransactionCurrency query()
- * @method static \Illuminate\Database\Eloquent\Builder|TransactionCurrency whereCode($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TransactionCurrency whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TransactionCurrency whereDecimalPlaces($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TransactionCurrency whereDeletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TransactionCurrency whereEnabled($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TransactionCurrency whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TransactionCurrency whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TransactionCurrency whereSymbol($value)
- * @method static \Illuminate\Database\Eloquent\Builder|TransactionCurrency whereUpdatedAt($value)
- * @method static Builder|TransactionCurrency                               withTrashed()
- * @method static Builder|TransactionCurrency                               withoutTrashed()
- *
- * @property Collection<int, UserGroup> $userGroups
- * @property null|int                   $user_groups_count
- * @property Collection<int, User>      $users
- * @property null|int                   $users_count
- *
- * @mixin Eloquent
- */
 class TransactionCurrency extends Model
 {
     use ReturnsIntegerIdTrait;
     use SoftDeletes;
 
-    public ?bool $userGroupDefault;
-    public ?bool $userGroupEnabled;
+    public ?bool $userGroupNative  = null;
+    public ?bool $userGroupEnabled = null;
     protected $casts
-                        = [
+                                   = [
             'created_at'     => 'datetime',
             'updated_at'     => 'datetime',
             'deleted_at'     => 'datetime',
@@ -96,7 +48,7 @@ class TransactionCurrency extends Model
             'enabled'        => 'bool',
         ];
 
-    protected $fillable = ['name', 'code', 'symbol', 'decimal_places', 'enabled'];
+    protected $fillable            = ['name', 'code', 'symbol', 'decimal_places', 'enabled'];
 
     /**
      * Route binder. Converts the key in the URL to the specified object (or throw 404).
@@ -106,7 +58,7 @@ class TransactionCurrency extends Model
     public static function routeBinder(string $value): self
     {
         if (auth()->check()) {
-            $currencyId = (int)$value;
+            $currencyId = (int) $value;
             $currency   = self::find($currencyId);
             if (null !== $currency) {
                 $currency->refreshForUser(auth()->user());
@@ -121,8 +73,8 @@ class TransactionCurrency extends Model
     public function refreshForUser(User $user): void
     {
         $current                = $user->userGroup->currencies()->where('transaction_currencies.id', $this->id)->first();
-        $default                = app('amount')->getDefaultCurrencyByUserGroup($user->userGroup);
-        $this->userGroupDefault = $default->id === $this->id;
+        $native                 = app('amount')->getNativeCurrencyByUserGroup($user->userGroup);
+        $this->userGroupNative  = $native->id === $this->id;
         $this->userGroupEnabled = null !== $current;
     }
 
@@ -160,7 +112,7 @@ class TransactionCurrency extends Model
     protected function decimalPlaces(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 }

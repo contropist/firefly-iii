@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ShowController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -56,7 +57,7 @@ class ShowController extends Controller
                 $this->repository    = app(TransactionGroupRepositoryInterface::class);
                 $this->aleRepository = app(ALERepositoryInterface::class);
 
-                app('view')->share('title', (string)trans('firefly.transactions'));
+                app('view')->share('title', (string) trans('firefly.transactions'));
                 app('view')->share('mainTitleIcon', 'fa-exchange');
 
                 return $next($request);
@@ -87,7 +88,7 @@ class ShowController extends Controller
             throw new FireflyException('This transaction is broken :(.');
         }
 
-        $type            = (string)trans(sprintf('firefly.%s', $first->transactionType->type));
+        $type            = (string) trans(sprintf('firefly.%s', $first->transactionType->type));
         $title           = 1 === $splits ? $first->description : $transactionGroup->title;
         $subTitle        = sprintf('%s: "%s"', $type, $title);
 
@@ -102,7 +103,7 @@ class ShowController extends Controller
 
         foreach (array_keys($groupArray['transactions']) as $index) {
             $groupArray['transactions'][$index]['tags'] = $this->repository->getTagObjects(
-                $groupArray['transactions'][$index]['transaction_journal_id']
+                (int) $groupArray['transactions'][$index]['transaction_journal_id']
             );
         }
 

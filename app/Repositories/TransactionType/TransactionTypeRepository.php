@@ -1,4 +1,5 @@
 <?php
+
 /**
  * TransactionTypeRepository.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,6 +24,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Repositories\TransactionType;
 
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Models\TransactionType;
 use Illuminate\Support\Collection;
 
@@ -39,10 +41,10 @@ class TransactionTypeRepository implements TransactionTypeRepositoryInterface
 
             return $type;
         }
-        $typeString ??= TransactionType::WITHDRAWAL;
+        $typeString ??= TransactionTypeEnum::WITHDRAWAL->value;
         $search = $this->findByType($typeString);
         if (null === $search) {
-            $search = $this->findByType(TransactionType::WITHDRAWAL);
+            $search = $this->findByType(TransactionTypeEnum::WITHDRAWAL->value);
         }
         app('log')->debug(sprintf('Tried to search for "%s", came up with "%s". Will return it.', $typeString, $search->type));
 
@@ -62,6 +64,6 @@ class TransactionTypeRepository implements TransactionTypeRepositoryInterface
             return TransactionType::get();
         }
 
-        return TransactionType::where('type', 'LIKE', sprintf('%%%s%%', $query))->take($limit)->get();
+        return TransactionType::whereLike('type', sprintf('%%%s%%', $query))->take($limit)->get();
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BillTransformer.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -27,8 +28,10 @@ use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use FireflyIII\Models\Bill;
 use FireflyIII\Models\ObjectGroup;
+use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Models\TransactionJournal;
 use FireflyIII\Repositories\Bill\BillRepositoryInterface;
+use FireflyIII\Support\Facades\Amount;
 use FireflyIII\Support\Models\BillDateCalculator;
 use Illuminate\Support\Collection;
 
@@ -39,24 +42,30 @@ class BillTransformer extends AbstractTransformer
 {
     private BillDateCalculator      $calculator;
     private BillRepositoryInterface $repository;
+    private TransactionCurrency     $default;
+    private bool                    $convertToNative;
 
     /**
      * BillTransformer constructor.
      */
     public function __construct()
     {
-        $this->repository = app(BillRepositoryInterface::class);
-        $this->calculator = app(BillDateCalculator::class);
+        $this->repository      = app(BillRepositoryInterface::class);
+        $this->calculator      = app(BillDateCalculator::class);
+        $this->default         = Amount::getNativeCurrency();
+        $this->convertToNative = Amount::convertToNative();
     }
 
     /**
      * Transform the bill.
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings("PHPMD.ExcessiveMethodLength")
+     * @SuppressWarnings("PHPMD.NPathComplexity")
      */
     public function transform(Bill $bill): array
     {
+        $default           = $this->parameters->get('defaultCurrency') ?? $this->default;
+
         $paidData          = $this->paidData($bill);
         $lastPaidDate      = $this->getLastPaidDate($paidData);
         $start             = $this->parameters->get('start') ?? today()->subYears(10);
@@ -138,34 +147,40 @@ class BillTransformer extends AbstractTransformer
         }
 
         return [
-            'id'                       => $bill->id,
-            'created_at'               => $bill->created_at->toAtomString(),
-            'updated_at'               => $bill->updated_at->toAtomString(),
-            'currency_id'              => (string)$bill->transaction_currency_id,
-            'currency_code'            => $currency->code,
-            'currency_symbol'          => $currency->symbol,
-            'currency_decimal_places'  => $currency->decimal_places,
-            'name'                     => $bill->name,
-            'amount_min'               => app('steam')->bcround($bill->amount_min, $currency->decimal_places),
-            'amount_max'               => app('steam')->bcround($bill->amount_max, $currency->decimal_places),
-            'date'                     => $bill->date->toAtomString(),
-            'end_date'                 => $bill->end_date?->toAtomString(),
-            'extension_date'           => $bill->extension_date?->toAtomString(),
-            'repeat_freq'              => $bill->repeat_freq,
-            'skip'                     => $bill->skip,
-            'active'                   => $bill->active,
-            'order'                    => $bill->order,
-            'notes'                    => $notes,
-            'object_group_id'          => null !== $objectGroupId ? (string)$objectGroupId : null,
-            'object_group_order'       => $objectGroupOrder,
-            'object_group_title'       => $objectGroupTitle,
+            'id'                             => $bill->id,
+            'created_at'                     => $bill->created_at->toAtomString(),
+            'updated_at'                     => $bill->updated_at->toAtomString(),
+            'currency_id'                    => (string) $bill->transaction_currency_id,
+            'currency_code'                  => $currency->code,
+            'currency_symbol'                => $currency->symbol,
+            'currency_decimal_places'        => $currency->decimal_places,
+            'native_currency_id'             => null === $default ? null : (string) $default->id,
+            'native_currency_code'           => $default?->code,
+            'native_currency_symbol'         => $default?->symbol,
+            'native_currency_decimal_places' => $default?->decimal_places,
+            'name'                           => $bill->name,
+            'amount_min'                     => app('steam')->bcround($bill->amount_min, $currency->decimal_places),
+            'amount_max'                     => app('steam')->bcround($bill->amount_max, $currency->decimal_places),
+            'native_amount_min'              => $this->convertToNative ? app('steam')->bcround($bill->native_amount_min, $default->decimal_places) : null,
+            'native_amount_max'              => $this->convertToNative ? app('steam')->bcround($bill->native_amount_max, $default->decimal_places) : null,
+            'date'                           => $bill->date->toAtomString(),
+            'end_date'                       => $bill->end_date?->toAtomString(),
+            'extension_date'                 => $bill->extension_date?->toAtomString(),
+            'repeat_freq'                    => $bill->repeat_freq,
+            'skip'                           => $bill->skip,
+            'active'                         => $bill->active,
+            'order'                          => $bill->order,
+            'notes'                          => $notes,
+            'object_group_id'                => null !== $objectGroupId ? (string) $objectGroupId : null,
+            'object_group_order'             => $objectGroupOrder,
+            'object_group_title'             => $objectGroupTitle,
 
             // these fields need work:
-            'next_expected_match'      => $nem,
-            'next_expected_match_diff' => $nemDiff,
-            'pay_dates'                => $payDatesFormatted,
-            'paid_dates'               => $paidDataFormatted,
-            'links'                    => [
+            'next_expected_match'            => $nem,
+            'next_expected_match_diff'       => $nemDiff,
+            'pay_dates'                      => $payDatesFormatted,
+            'paid_dates'                     => $paidDataFormatted,
+            'links'                          => [
                 [
                     'rel' => 'self',
                     'uri' => '/bills/'.$bill->id,
@@ -194,11 +209,19 @@ class BillTransformer extends AbstractTransformer
         $searchStart  = clone $start;
         $start->subDay();
 
-        app('log')->debug(sprintf('Parameters are start: %s end: %s', $start->format('Y-m-d'), $this->parameters->get('end')->format('Y-m-d')));
+        /** @var Carbon $end */
+        $end          = clone $this->parameters->get('end');
+        $searchEnd    = clone $end;
+
+        // move the search dates to the start of the day.
+        $searchStart->startOfDay();
+        $searchEnd->endOfDay();
+
+        app('log')->debug(sprintf('Parameters are start: %s end: %s', $start->format('Y-m-d'), $end->format('Y-m-d')));
         app('log')->debug(sprintf('Search parameters are: start: %s', $searchStart->format('Y-m-d')));
 
         // Get from database when bill was paid.
-        $set          = $this->repository->getPaidDatesInRange($bill, $searchStart, $this->parameters->get('end'));
+        $set          = $this->repository->getPaidDatesInRange($bill, $searchStart, $searchEnd);
         app('log')->debug(sprintf('Count %d entries in getPaidDatesInRange()', $set->count()));
 
         // Grab from array the most recent payment. If none exist, fall back to the start date and pretend *that* was the last paid date.
@@ -210,8 +233,8 @@ class BillTransformer extends AbstractTransformer
         $result       = [];
         foreach ($set as $entry) {
             $result[] = [
-                'transaction_group_id'   => (string)$entry->transaction_group_id,
-                'transaction_journal_id' => (string)$entry->id,
+                'transaction_group_id'   => (string) $entry->transaction_group_id,
+                'transaction_journal_id' => (string) $entry->id,
                 'date'                   => $entry->date->format('Y-m-d'),
                 'date_object'            => $entry->date,
             ];

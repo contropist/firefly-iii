@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AttachmentUpdateRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -60,7 +61,7 @@ class UpdateRequest extends FormRequest
         $models = config('firefly.valid_attachment_models');
         $models = array_map(
             static function (string $className) {
-                return str_replace('FireflyIII\\Models\\', '', $className);
+                return str_replace('FireflyIII\Models\\', '', $className);
             },
             $models
         );

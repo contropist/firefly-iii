@@ -1,4 +1,5 @@
 <?php
+
 /*
  * TagRepositoryInterface.php
  * Copyright (c) 2024 james@firefly-iii.org
@@ -30,5 +31,5 @@ interface TagRepositoryInterface
     /**
      * Find one or more tags based on the query.
      */
-    public function searchTag(string $query, int $limit): Collection;
+    public function searchTag(array $query, int $limit): Collection;
 }

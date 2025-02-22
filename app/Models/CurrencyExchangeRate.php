@@ -23,57 +23,15 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Carbon\Carbon;
-use Eloquent;
+use FireflyIII\Casts\SeparateTimezoneCaster;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use FireflyIII\Support\Models\ReturnsIntegerUserIdTrait;
 use FireflyIII\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-/**
- * Class CurrencyExchangeRate
- *
- * @property int                 $id
- * @property null|Carbon         $created_at
- * @property null|Carbon         $updated_at
- * @property null|string         $deleted_at
- * @property int                 $user_id
- * @property int                 $from_currency_id
- * @property int                 $to_currency_id
- * @property Carbon              $date
- * @property string              $rate
- * @property string              $user_rate
- * @property TransactionCurrency $fromCurrency
- * @property TransactionCurrency $toCurrency
- * @property User                $user
- *
- * @method static Builder|CurrencyExchangeRate newModelQuery()
- * @method static Builder|CurrencyExchangeRate newQuery()
- * @method static Builder|CurrencyExchangeRate query()
- * @method static Builder|CurrencyExchangeRate whereCreatedAt($value)
- * @method static Builder|CurrencyExchangeRate whereDate($value)
- * @method static Builder|CurrencyExchangeRate whereDeletedAt($value)
- * @method static Builder|CurrencyExchangeRate whereFromCurrencyId($value)
- * @method static Builder|CurrencyExchangeRate whereId($value)
- * @method static Builder|CurrencyExchangeRate whereRate($value)
- * @method static Builder|CurrencyExchangeRate whereToCurrencyId($value)
- * @method static Builder|CurrencyExchangeRate whereUpdatedAt($value)
- * @method static Builder|CurrencyExchangeRate whereUserId($value)
- * @method static Builder|CurrencyExchangeRate whereUserRate($value)
- *
- * @property int $user_group_id
- *
- * @method static Builder|CurrencyExchangeRate whereUserGroupId($value)
- * @method static Builder|CurrencyExchangeRate onlyTrashed()
- * @method static Builder|CurrencyExchangeRate withTrashed()
- * @method static Builder|CurrencyExchangeRate withoutTrashed()
- *
- * @mixin Eloquent
- */
 class CurrencyExchangeRate extends Model
 {
     use ReturnsIntegerIdTrait;
@@ -82,14 +40,17 @@ class CurrencyExchangeRate extends Model
 
     protected $casts
                         = [
-            'created_at'       => 'datetime',
-            'updated_at'       => 'datetime',
-            'user_id'          => 'int',
-            'from_currency_id' => 'int',
-            'to_currency_id'   => 'int',
-            'date'             => 'datetime',
+            'created_at'                   => 'datetime',
+            'updated_at'                   => 'datetime',
+            'user_id'                      => 'integer',
+            'user_group_id'                => 'integer',
+            'from_currency_id'             => 'integer',
+            'to_currency_id'               => 'integer',
+            'date'                         => SeparateTimezoneCaster::class,
+            'rate'                         => 'string',
+            'user_rate'                    => 'string',
         ];
-    protected $fillable = ['user_id', 'from_currency_id', 'to_currency_id', 'date', 'rate'];
+    protected $fillable = ['user_id', 'from_currency_id', 'to_currency_id', 'date', 'date_tz', 'rate'];
 
     public function fromCurrency(): BelongsTo
     {
@@ -109,28 +70,28 @@ class CurrencyExchangeRate extends Model
     protected function fromCurrencyId(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 
     protected function rate(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (string)$value,
+            get: static fn ($value) => (string) $value,
         );
     }
 
     protected function toCurrencyId(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 
     protected function userRate(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (string)$value,
+            get: static fn ($value) => (string) $value,
         );
     }
 }

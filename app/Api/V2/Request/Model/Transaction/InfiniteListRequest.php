@@ -87,7 +87,7 @@ class InfiniteListRequest extends FormRequest
 
     public function getAccountTypes(): array
     {
-        $type = (string)$this->get('type', 'default');
+        $type = (string) $this->get('type', 'default');
 
         return $this->mapAccountTypes($type);
     }
@@ -101,7 +101,7 @@ class InfiniteListRequest extends FormRequest
 
     public function getTransactionTypes(): array
     {
-        $type = (string)$this->get('type', 'default');
+        $type = (string) $this->get('type', 'default');
 
         return $this->mapTransactionTypes($type);
     }
@@ -109,8 +109,8 @@ class InfiniteListRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'start'     => 'date',
-            'end'       => 'date|after:start',
+            'start'     => 'date|after:1900-01-01|before:2099-12-31',
+            'end'       => 'date|after:start|after:1900-01-01|before:2099-12-31',
             'start_row' => 'integer|min:0|max:4294967296',
             'end_row'   => 'integer|min:0|max:4294967296|gt:start_row',
         ];

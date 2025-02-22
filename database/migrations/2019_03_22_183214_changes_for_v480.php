@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2019_03_22_183214_changes_for_v480.php
  * Copyright (c) 2019 james@firefly-iii.org.
@@ -112,7 +113,7 @@ class ChangesForV480 extends Migration
     /**
      * Run the migrations.
      *
-     * @SuppressWarnings(PHPMD.ShortMethodName)
+     * @SuppressWarnings("PHPMD.ShortMethodName")
      */
     public function up(): void
     {

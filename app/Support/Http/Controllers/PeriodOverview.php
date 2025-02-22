@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PeriodOverview.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -24,12 +25,12 @@ declare(strict_types=1);
 namespace FireflyIII\Support\Http\Controllers;
 
 use Carbon\Carbon;
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Helpers\Collector\GroupCollectorInterface;
 use FireflyIII\Models\Account;
 use FireflyIII\Models\Category;
 use FireflyIII\Models\Tag;
-use FireflyIII\Models\TransactionType;
 use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use FireflyIII\Support\CacheProperties;
 use Illuminate\Support\Collection;
@@ -96,7 +97,7 @@ trait PeriodOverview
         $collector     = app(GroupCollectorInterface::class);
         $collector->setAccounts(new Collection([$account]));
         $collector->setRange($start, $end);
-        $collector->setTypes([TransactionType::DEPOSIT]);
+        $collector->setTypes([TransactionTypeEnum::DEPOSIT->value]);
         $earnedSet     = $collector->getExtractedJournals();
 
         // collect all income in this period:
@@ -104,7 +105,7 @@ trait PeriodOverview
         $collector     = app(GroupCollectorInterface::class);
         $collector->setAccounts(new Collection([$account]));
         $collector->setRange($start, $end);
-        $collector->setTypes([TransactionType::WITHDRAWAL]);
+        $collector->setTypes([TransactionTypeEnum::WITHDRAWAL->value]);
         $spentSet      = $collector->getExtractedJournals();
 
         // collect all transfers in this period:
@@ -112,7 +113,7 @@ trait PeriodOverview
         $collector     = app(GroupCollectorInterface::class);
         $collector->setAccounts(new Collection([$account]));
         $collector->setRange($start, $end);
-        $collector->setTypes([TransactionType::TRANSFER]);
+        $collector->setTypes([TransactionTypeEnum::TRANSFER->value]);
         $transferSet   = $collector->getExtractedJournals();
 
         // loop dates
@@ -165,7 +166,7 @@ trait PeriodOverview
 
         /** @var array $journal */
         foreach ($journals as $journal) {
-            if ($account->id === (int)$journal['source_account_id']) {
+            if ($account->id === (int) $journal['source_account_id']) {
                 $return[] = $journal;
             }
         }
@@ -182,7 +183,7 @@ trait PeriodOverview
 
         /** @var array $journal */
         foreach ($journals as $journal) {
-            if ($account->id === (int)$journal['destination_account_id']) {
+            if ($account->id === (int) $journal['destination_account_id']) {
                 $return[] = $journal;
             }
         }
@@ -196,37 +197,43 @@ trait PeriodOverview
 
         /** @var array $journal */
         foreach ($journals as $journal) {
-            $currencyId                    = (int)$journal['currency_id'];
+            $currencyId                    = (int) $journal['currency_id'];
+            $currencyCode                  = $journal['currency_code'];
+            $currencyName                  = $journal['currency_name'];
+            $currencySymbol                = $journal['currency_symbol'];
+            $currencyDecimalPlaces         = $journal['currency_decimal_places'];
             $foreignCurrencyId             = $journal['foreign_currency_id'];
-            if (!array_key_exists($currencyId, $return)) {
-                $return[$currencyId] = [
-                    'amount'                  => '0',
-                    'count'                   => 0,
-                    'currency_id'             => $currencyId,
-                    'currency_name'           => $journal['currency_name'],
-                    'currency_code'           => $journal['currency_code'],
-                    'currency_symbol'         => $journal['currency_symbol'],
-                    'currency_decimal_places' => $journal['currency_decimal_places'],
-                ];
-            }
-            $return[$currencyId]['amount'] = bcadd($return[$currencyId]['amount'], $journal['amount'] ?? '0');
-            ++$return[$currencyId]['count'];
+            $amount                        = $journal['amount'] ?? '0';
 
-            if (null !== $foreignCurrencyId && null !== $journal['foreign_amount']) {
-                if (!array_key_exists($foreignCurrencyId, $return)) {
-                    $return[$foreignCurrencyId] = [
-                        'amount'                  => '0',
-                        'count'                   => 0,
-                        'currency_id'             => (int)$foreignCurrencyId,
-                        'currency_name'           => $journal['foreign_currency_name'],
-                        'currency_code'           => $journal['foreign_currency_code'],
-                        'currency_symbol'         => $journal['foreign_currency_symbol'],
-                        'currency_decimal_places' => $journal['foreign_currency_decimal_places'],
-                    ];
-                }
-                ++$return[$foreignCurrencyId]['count'];
-                $return[$foreignCurrencyId]['amount'] = bcadd($return[$foreignCurrencyId]['amount'], $journal['foreign_amount']);
+            if ($this->convertToNative && $currencyId !== $this->defaultCurrency->id && $foreignCurrencyId !== $this->defaultCurrency->id) {
+                $amount                = $journal['native_amount'] ?? '0';
+                $currencyId            = $this->defaultCurrency->id;
+                $currencyCode          = $this->defaultCurrency->code;
+                $currencyName          = $this->defaultCurrency->name;
+                $currencySymbol        = $this->defaultCurrency->symbol;
+                $currencyDecimalPlaces = $this->defaultCurrency->decimal_places;
             }
+            if ($this->convertToNative && $currencyId !== $this->defaultCurrency->id && $foreignCurrencyId === $this->defaultCurrency->id) {
+                $currencyId            = (int) $foreignCurrencyId;
+                $currencyCode          = $journal['foreign_currency_code'];
+                $currencyName          = $journal['foreign_currency_name'];
+                $currencySymbol        = $journal['foreign_currency_symbol'];
+                $currencyDecimalPlaces = $journal['foreign_currency_decimal_places'];
+                $amount                = $journal['foreign_amount'] ?? '0';
+            }
+            $return[$currencyId] ??= [
+                'amount'                  => '0',
+                'count'                   => 0,
+                'currency_id'             => $currencyId,
+                'currency_name'           => $currencyName,
+                'currency_code'           => $currencyCode,
+                'currency_symbol'         => $currencySymbol,
+                'currency_decimal_places' => $currencyDecimalPlaces,
+            ];
+
+
+            $return[$currencyId]['amount'] = bcadd($return[$currencyId]['amount'], $amount);
+            ++$return[$currencyId]['count'];
         }
 
         return $return;
@@ -263,7 +270,7 @@ trait PeriodOverview
         $collector     = app(GroupCollectorInterface::class);
         $collector->setCategory($category);
         $collector->setRange($start, $end);
-        $collector->setTypes([TransactionType::DEPOSIT]);
+        $collector->setTypes([TransactionTypeEnum::DEPOSIT->value]);
         $earnedSet     = $collector->getExtractedJournals();
 
         // collect all income in this period:
@@ -271,7 +278,7 @@ trait PeriodOverview
         $collector     = app(GroupCollectorInterface::class);
         $collector->setCategory($category);
         $collector->setRange($start, $end);
-        $collector->setTypes([TransactionType::WITHDRAWAL]);
+        $collector->setTypes([TransactionTypeEnum::WITHDRAWAL->value]);
         $spentSet      = $collector->getExtractedJournals();
 
         // collect all transfers in this period:
@@ -279,7 +286,7 @@ trait PeriodOverview
         $collector     = app(GroupCollectorInterface::class);
         $collector->setCategory($category);
         $collector->setRange($start, $end);
-        $collector->setTypes([TransactionType::TRANSFER]);
+        $collector->setTypes([TransactionTypeEnum::TRANSFER->value]);
         $transferSet   = $collector->getExtractedJournals();
         foreach ($dates as $currentDate) {
             $spent       = $this->filterJournalsByDate($spentSet, $currentDate['start'], $currentDate['end']);
@@ -321,6 +328,7 @@ trait PeriodOverview
         $cache         = new CacheProperties();
         $cache->addProperty($start);
         $cache->addProperty($end);
+        $cache->addProperty($this->convertToNative);
         $cache->addProperty('no-budget-period-entries');
 
         if ($cache->has()) {
@@ -334,7 +342,7 @@ trait PeriodOverview
         // get all expenses without a budget.
         /** @var GroupCollectorInterface $collector */
         $collector     = app(GroupCollectorInterface::class);
-        $collector->setRange($start, $end)->withoutBudget()->withAccountInformation()->setTypes([TransactionType::WITHDRAWAL]);
+        $collector->setRange($start, $end)->withoutBudget()->withAccountInformation()->setTypes([TransactionTypeEnum::WITHDRAWAL->value]);
         $journals      = $collector->getExtractedJournals();
 
         foreach ($dates as $currentDate) {
@@ -370,6 +378,7 @@ trait PeriodOverview
         $first       = $this->journalRepos->firstNull();
         $start       = null === $first ? new Carbon() : $first->date;
         $end         = clone $theDate;
+        $end         = app('navigation')->endOfPeriod($end, $range);
 
         app('log')->debug(sprintf('Start for getNoCategoryPeriodOverview() is %s', $start->format('Y-m-d')));
         app('log')->debug(sprintf('End for getNoCategoryPeriodOverview() is %s', $end->format('Y-m-d')));
@@ -383,7 +392,7 @@ trait PeriodOverview
         $collector   = app(GroupCollectorInterface::class);
         $collector->withoutCategory();
         $collector->setRange($start, $end);
-        $collector->setTypes([TransactionType::DEPOSIT]);
+        $collector->setTypes([TransactionTypeEnum::DEPOSIT->value]);
         $earnedSet   = $collector->getExtractedJournals();
 
         // collect all income in this period:
@@ -391,7 +400,7 @@ trait PeriodOverview
         $collector   = app(GroupCollectorInterface::class);
         $collector->withoutCategory();
         $collector->setRange($start, $end);
-        $collector->setTypes([TransactionType::WITHDRAWAL]);
+        $collector->setTypes([TransactionTypeEnum::WITHDRAWAL->value]);
         $spentSet    = $collector->getExtractedJournals();
 
         // collect all transfers in this period:
@@ -399,7 +408,7 @@ trait PeriodOverview
         $collector   = app(GroupCollectorInterface::class);
         $collector->withoutCategory();
         $collector->setRange($start, $end);
-        $collector->setTypes([TransactionType::TRANSFER]);
+        $collector->setTypes([TransactionTypeEnum::TRANSFER->value]);
         $transferSet = $collector->getExtractedJournals();
 
         /** @var array $currentDate */
@@ -440,7 +449,7 @@ trait PeriodOverview
         $cache->addProperty('tag-period-entries');
         $cache->addProperty($tag->id);
         if ($cache->has()) {
-            // return $cache->get();
+            return $cache->get();
         }
 
         /** @var array $dates */
@@ -452,7 +461,7 @@ trait PeriodOverview
         $collector     = app(GroupCollectorInterface::class);
         $collector->setTag($tag);
         $collector->setRange($start, $end);
-        $collector->setTypes([TransactionType::DEPOSIT]);
+        $collector->setTypes([TransactionTypeEnum::DEPOSIT->value]);
         $earnedSet     = $collector->getExtractedJournals();
 
         // collect all income in this period:
@@ -460,7 +469,7 @@ trait PeriodOverview
         $collector     = app(GroupCollectorInterface::class);
         $collector->setTag($tag);
         $collector->setRange($start, $end);
-        $collector->setTypes([TransactionType::WITHDRAWAL]);
+        $collector->setTypes([TransactionTypeEnum::WITHDRAWAL->value]);
         $spentSet      = $collector->getExtractedJournals();
 
         // collect all transfers in this period:
@@ -468,7 +477,7 @@ trait PeriodOverview
         $collector     = app(GroupCollectorInterface::class);
         $collector->setTag($tag);
         $collector->setRange($start, $end);
-        $collector->setTypes([TransactionType::TRANSFER]);
+        $collector->setTypes([TransactionTypeEnum::TRANSFER->value]);
         $transferSet   = $collector->getExtractedJournals();
 
         // filer all of them:

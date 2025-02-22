@@ -39,7 +39,6 @@ class EitherConfigKey
 
             // firefly iii settings
             'firefly.version',
-            'firefly.api_version',
             'firefly.default_location',
             'firefly.account_to_transaction',
             'firefly.allowed_opposing_types',
@@ -63,7 +62,7 @@ class EitherConfigKey
     /**
      * @throws NotFoundHttpException
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public static function routeBinder(string $value, Route $route): string
     {

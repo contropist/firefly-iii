@@ -1,4 +1,5 @@
 <?php
+
 /*
  * IsDuplicateTransaction.php
  * Copyright (c) 2021 james@firefly-iii.org
@@ -35,7 +36,7 @@ class IsDuplicateTransaction implements ValidationRule
     private string $value;
 
     /**
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function validate(string $attribute, mixed $value, \Closure $fail): void
     {

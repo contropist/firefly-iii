@@ -114,7 +114,7 @@ class SearchRuleEngine implements RuleEngineInterface
             }
 
             // if the trigger needs no context, value is different:
-            $needsContext  = (bool)(config(sprintf('search.operators.%s.needs_context', $contextSearch)) ?? true);
+            $needsContext  = (bool) (config(sprintf('search.operators.%s.needs_context', $contextSearch)) ?? true);
             if (false === $needsContext) {
                 app('log')->debug(sprintf('SearchRuleEngine:: add a rule trigger (no context): %s:true', $ruleTrigger->trigger_type));
                 $searchArray[$ruleTrigger->trigger_type][] = 'true';
@@ -187,7 +187,7 @@ class SearchRuleEngine implements RuleEngineInterface
         $journalId = 0;
         foreach ($array as $triggerName => $values) {
             if ('journal_id' === $triggerName && is_array($values) && 1 === count($values)) {
-                $journalId = (int)trim($values[0] ?? '"0"', '"'); // follows format "123".
+                $journalId = (int) trim($values[0] ?? '"0"', '"'); // follows format "123".
                 app('log')->debug(sprintf('Found journal ID #%d', $journalId));
             }
         }
@@ -277,7 +277,7 @@ class SearchRuleEngine implements RuleEngineInterface
             app('log')->debug(sprintf('Total collection is now %d transactions', $total->count()));
             ++$count;
             // if trigger says stop processing, do so.
-            if ($ruleTrigger->stop_processing && $result->count() > 0) {
+            if (true === $ruleTrigger->stop_processing && $result->count() > 0) {
                 app('log')->debug('The trigger says to stop processing, so stop processing other triggers.');
 
                 break;
@@ -319,10 +319,10 @@ class SearchRuleEngine implements RuleEngineInterface
             /** @var Rule $rule */
             foreach ($this->rules as $rule) {
                 $result = $this->fireRule($rule);
-                if (true === $result && $rule->stop_processing) {
+                if (true === $result && true === $rule->stop_processing) {
                     app('log')->debug(sprintf('Rule #%d has triggered and executed, but calls to stop processing. Since not in the context of a group, do not stop.', $rule->id));
                 }
-                if (false === $result && $rule->stop_processing) {
+                if (false === $result && true === $rule->stop_processing) {
                     app('log')->debug(sprintf('Rule #%d has triggered and changed nothing, but calls to stop processing. Do not stop.', $rule->id));
                 }
             }
@@ -461,12 +461,12 @@ class SearchRuleEngine implements RuleEngineInterface
         }
 
         // pick up from the action if it actually acted or not:
-        if ($ruleAction->stop_processing && true === $result) {
+        if (true === $ruleAction->stop_processing && true === $result) {
             app('log')->debug(sprintf('Rule action "%s" reports changes AND asks to break, so break!', $ruleAction->action_type));
 
             return true;
         }
-        if ($ruleAction->stop_processing && false === $result) {
+        if (true === $ruleAction->stop_processing && false === $result) {
             app('log')->debug(sprintf('Rule action "%s" reports NO changes AND asks to break, but we wont break!', $ruleAction->action_type));
         }
 
@@ -476,7 +476,7 @@ class SearchRuleEngine implements RuleEngineInterface
     private function addNotes(array $transaction): array
     {
         $transaction['notes'] = '';
-        $dbNote               = Note::where('noteable_id', (int)$transaction['transaction_journal_id'])->where('noteable_type', TransactionJournal::class)->first(['notes.*']);
+        $dbNote               = Note::where('noteable_id', (int) $transaction['transaction_journal_id'])->where('noteable_type', TransactionJournal::class)->first(['notes.*']);
         if (null !== $dbNote) {
             $transaction['notes'] = $dbNote->text;
         }

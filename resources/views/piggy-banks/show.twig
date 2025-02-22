@@ -33,8 +33,12 @@
                 <div class="box-body no-padding">
                     <table class="table table-responsive table-hover" id="piggyDetails">
                         <tr>
-                            <td style="width:40%;">{{ 'account'|_ }}</td>
-                            <td><a href="{{ route('accounts.show', piggyBank.account_id) }}">{{ piggyBank.account.name }}</a></td>
+                            <td style="width:40%;">{{ 'saveOnAccounts'|_ }}</td>
+                            <td>
+                                {% for account in piggy.accounts %}
+                                    <a href="{{ route('accounts.show', account.id) }}">{{ account.name }}</a><br>
+                                {% endfor %}
+                            </td>
                         </tr>
                         {% if piggy.object_group_title %}
                             <tr>
@@ -67,8 +71,8 @@
                         <tr>
                             <td>{{ 'start_date'|_ }}</td>
                             <td>
-                                {% if piggyBank.startdate %}
-                                    {{ piggyBank.startdate.isoFormat(monthAndDayFormat) }}
+                                {% if piggyBank.start_date %}
+                                    {{ piggyBank.start_date.isoFormat(monthAndDayFormat) }}
                                 {% else %}
                                     <em>{{ 'no_start_date'|_ }}</em>
                                 {% endif %}
@@ -77,14 +81,14 @@
                         <tr>
                             <td>{{ 'target_date'|_ }}</td>
                             <td>
-                                {% if piggyBank.targetdate %}
-                                    {{ piggyBank.targetdate.isoFormat(monthAndDayFormat) }}
+                                {% if piggyBank.target_date %}
+                                    {{ piggyBank.target_date.isoFormat(monthAndDayFormat) }}
                                 {% else %}
                                     <em>{{ 'no_target_date'|_ }}</em>
                                 {% endif %}
                             </td>
                         </tr>
-                        {% if piggyBank.targetdate and piggy.save_per_month %}
+                        {% if piggyBank.target_date and piggy.save_per_month %}
                             <tr>
                                 <td>{{ 'suggested_amount'|_ }}</td>
                                 <td>

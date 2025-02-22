@@ -1,4 +1,5 @@
 <?php
+
 /**
  * NoCategoryController.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -24,10 +25,10 @@ declare(strict_types=1);
 namespace FireflyIII\Http\Controllers\Category;
 
 use Carbon\Carbon;
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Helpers\Collector\GroupCollectorInterface;
 use FireflyIII\Http\Controllers\Controller;
-use FireflyIII\Models\TransactionType;
 use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
 use FireflyIII\Support\Http\Controllers\PeriodOverview;
 use Illuminate\Contracts\View\Factory;
@@ -54,7 +55,7 @@ class NoCategoryController extends Controller
 
         $this->middleware(
             function ($request, $next) {
-                app('view')->share('title', (string)trans('firefly.categories'));
+                app('view')->share('title', (string) trans('firefly.categories'));
                 app('view')->share('mainTitleIcon', 'fa-bookmark');
                 $this->journalRepos = app(JournalRepositoryInterface::class);
 
@@ -73,12 +74,13 @@ class NoCategoryController extends Controller
     public function show(Request $request, ?Carbon $start = null, ?Carbon $end = null)
     {
         app('log')->debug('Start of noCategory()');
-        // @var Carbon $start
         $start ??= session('start');
-        // @var Carbon $end
         $end   ??= session('end');
-        $page      = (int)$request->get('page');
-        $pageSize  = (int)app('preferences')->get('listPageSize', 50)->data;
+
+        /** @var Carbon $start */
+        /** @var Carbon $end */
+        $page      = (int) $request->get('page');
+        $pageSize  = (int) app('preferences')->get('listPageSize', 50)->data;
         $subTitle  = trans(
             'firefly.without_category_between',
             ['start' => $start->isoFormat($this->monthAndDayFormat), 'end' => $end->isoFormat($this->monthAndDayFormat)]
@@ -93,7 +95,7 @@ class NoCategoryController extends Controller
         $collector->setRange($start, $end)
             ->setLimit($pageSize)->setPage($page)->withoutCategory()
             ->withAccountInformation()->withBudgetInformation()
-            ->setTypes([TransactionType::WITHDRAWAL, TransactionType::DEPOSIT, TransactionType::TRANSFER])
+            ->setTypes([TransactionTypeEnum::WITHDRAWAL->value, TransactionTypeEnum::DEPOSIT->value, TransactionTypeEnum::TRANSFER->value])
         ;
         $groups    = $collector->getPaginatedGroups();
         $groups->setPath(route('categories.no-category', [$start->format('Y-m-d'), $end->format('Y-m-d')]));
@@ -112,10 +114,10 @@ class NoCategoryController extends Controller
         $start     = null;
         $end       = null;
         $periods   = new Collection();
-        $page      = (int)$request->get('page');
-        $pageSize  = (int)app('preferences')->get('listPageSize', 50)->data;
+        $page      = (int) $request->get('page');
+        $pageSize  = (int) app('preferences')->get('listPageSize', 50)->data;
         app('log')->debug('Start of noCategory()');
-        $subTitle  = (string)trans('firefly.all_journals_without_category');
+        $subTitle  = (string) trans('firefly.all_journals_without_category');
         $first     = $this->journalRepos->firstNull();
         $start     = null === $first ? new Carbon() : $first->date;
         $end       = today(config('app.timezone'));
@@ -126,7 +128,7 @@ class NoCategoryController extends Controller
         $collector = app(GroupCollectorInterface::class);
         $collector->setRange($start, $end)->setLimit($pageSize)->setPage($page)->withoutCategory()
             ->withAccountInformation()->withBudgetInformation()
-            ->setTypes([TransactionType::WITHDRAWAL, TransactionType::DEPOSIT, TransactionType::TRANSFER])
+            ->setTypes([TransactionTypeEnum::WITHDRAWAL->value, TransactionTypeEnum::DEPOSIT->value, TransactionTypeEnum::TRANSFER->value])
         ;
         $groups    = $collector->getPaginatedGroups();
         $groups->setPath(route('categories.no-category.all'));

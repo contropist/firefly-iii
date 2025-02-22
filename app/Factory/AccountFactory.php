@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Factory;
 
+use FireflyIII\Enums\AccountTypeEnum;
 use FireflyIII\Events\StoredAccount;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Account;
@@ -126,7 +127,7 @@ class AccountFactory
      */
     protected function getAccountType(array $data): ?AccountType
     {
-        $accountTypeId   = array_key_exists('account_type_id', $data) ? (int)$data['account_type_id'] : 0;
+        $accountTypeId   = array_key_exists('account_type_id', $data) ? (int) $data['account_type_id'] : 0;
         $accountTypeName = array_key_exists('account_type_name', $data) ? $data['account_type_name'] : null;
         $result          = null;
         // find by name or ID
@@ -159,7 +160,7 @@ class AccountFactory
         app('log')->debug(sprintf('Now in AccountFactory::find("%s", "%s")', $accountName, $accountType));
         $type = AccountType::whereType($accountType)->first();
 
-        // @var Account|null
+        /** @var null|Account */
         return $this->user->accounts()->where('account_type_id', $type->id)->where('name', $accountName)->first();
     }
 
@@ -184,7 +185,7 @@ class AccountFactory
             'iban'            => $data['iban'],
         ];
         // fix virtual balance when it's empty
-        if ('' === (string)$databaseData['virtual_balance']) {
+        if ('' === (string) $databaseData['virtual_balance']) {
             $databaseData['virtual_balance'] = null;
         }
         // remove virtual balance when not an asset account
@@ -236,13 +237,13 @@ class AccountFactory
      */
     private function cleanMetaDataArray(Account $account, array $data): array
     {
-        $currencyId           = array_key_exists('currency_id', $data) ? (int)$data['currency_id'] : 0;
-        $currencyCode         = array_key_exists('currency_code', $data) ? (string)$data['currency_code'] : '';
-        $accountRole          = array_key_exists('account_role', $data) ? (string)$data['account_role'] : null;
+        $currencyId           = array_key_exists('currency_id', $data) ? (int) $data['currency_id'] : 0;
+        $currencyCode         = array_key_exists('currency_code', $data) ? (string) $data['currency_code'] : '';
+        $accountRole          = array_key_exists('account_role', $data) ? (string) $data['account_role'] : null;
         $currency             = $this->getCurrency($currencyId, $currencyCode);
 
         // only asset account may have a role:
-        if (AccountType::ASSET !== $account->accountType->type) {
+        if (AccountTypeEnum::ASSET->value !== $account->accountType->type) {
             $accountRole = '';
         }
         // only liability may have direction:
@@ -258,10 +259,10 @@ class AccountFactory
     private function storeMetaData(Account $account, array $data): void
     {
         $fields  = $this->validFields;
-        if (AccountType::ASSET === $account->accountType->type) {
+        if (AccountTypeEnum::ASSET->value === $account->accountType->type) {
             $fields = $this->validAssetFields;
         }
-        if (AccountType::ASSET === $account->accountType->type && 'ccAsset' === $data['account_role']) {
+        if (AccountTypeEnum::ASSET->value === $account->accountType->type && 'ccAsset' === $data['account_role']) {
             $fields = $this->validCCFields;
         }
 
@@ -289,7 +290,7 @@ class AccountFactory
                     $data[$field] = 1;
                 }
 
-                $factory->crud($account, $field, (string)$data[$field]);
+                $factory->crud($account, $field, (string) $data[$field]);
             }
         }
     }
@@ -351,7 +352,7 @@ class AccountFactory
             $order = $maxOrder + 1;
         }
         if (array_key_exists('order', $data)) {
-            $order = (int)($data['order'] > $maxOrder ? $maxOrder + 1 : $data['order']);
+            $order = (int) ($data['order'] > $maxOrder ? $maxOrder + 1 : $data['order']);
             $order = 0 === $order ? $maxOrder + 1 : $order;
         }
 

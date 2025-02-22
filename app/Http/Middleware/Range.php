@@ -25,8 +25,10 @@ namespace FireflyIII\Http\Middleware;
 
 use Carbon\Carbon;
 use FireflyIII\Repositories\Journal\JournalRepositoryInterface;
+use FireflyIII\Support\Facades\Amount;
 use FireflyIII\Support\Http\Controllers\RequestInformation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class SessionFilter.
@@ -63,19 +65,22 @@ class Range
     {
         // ignore preference. set the range to be the current month:
         if (!app('session')->has('start') && !app('session')->has('end')) {
+            Log::debug('setRange: Session has no start or end.');
             $viewRange = app('preferences')->get('viewRange', '1M')->data;
             if (is_array($viewRange)) {
                 $viewRange = '1M';
             }
 
             $today     = today(config('app.timezone'));
-            $start     = app('navigation')->updateStartDate((string)$viewRange, $today);
-            $end       = app('navigation')->updateEndDate((string)$viewRange, $start);
+            $start     = app('navigation')->updateStartDate((string) $viewRange, $today);
+            $end       = app('navigation')->updateEndDate((string) $viewRange, $start);
 
             app('session')->put('start', $start);
             app('session')->put('end', $end);
         }
         if (!app('session')->has('first')) {
+            Log::debug('setRange: Session has no "first".');
+
             /** @var JournalRepositoryInterface $repository */
             $repository = app(JournalRepositoryInterface::class);
             $journal    = $repository->firstNull();
@@ -104,19 +109,19 @@ class Range
         setlocale(LC_TIME, $localeArray);
         $moneyResult       = setlocale(LC_MONETARY, $localeArray);
 
-        // send error to view, if could not set money format
+        // send error to view, if it could not set money format
         if (false === $moneyResult) {
             app('log')->error('Could not set locale. The following array doesnt work: ', $localeArray);
             app('view')->share('invalidMonetaryLocale', true);
         }
 
         // save some formats:
-        $monthAndDayFormat = (string)trans('config.month_and_day_js', [], $locale);
-        $dateTimeFormat    = (string)trans('config.date_time_js', [], $locale);
-        $defaultCurrency   = app('amount')->getDefaultCurrency();
+        $monthAndDayFormat = (string) trans('config.month_and_day_js', [], $locale);
+        $dateTimeFormat    = (string) trans('config.date_time_js', [], $locale);
+        $defaultCurrency   = Amount::getNativeCurrency();
 
         // also format for moment JS:
-        $madMomentJS       = (string)trans('config.month_and_day_moment_js', [], $locale);
+        $madMomentJS       = (string) trans('config.month_and_day_moment_js', [], $locale);
 
         app('view')->share('madMomentJS', $madMomentJS);
         app('view')->share('monthAndDayFormat', $monthAndDayFormat);

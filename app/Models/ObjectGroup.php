@@ -24,54 +24,15 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Carbon\Carbon;
-use Eloquent;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use FireflyIII\Support\Models\ReturnsIntegerUserIdTrait;
 use FireflyIII\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-/**
- * FireflyIII\Models\ObjectGroup
- *
- * @property int                    $id
- * @property int                    $user_id
- * @property null|Carbon            $created_at
- * @property null|Carbon            $updated_at
- * @property null|Carbon            $deleted_at
- * @property string                 $title
- * @property int                    $order
- * @property Account[]|Collection   $accounts
- * @property null|int               $accounts_count
- * @property Bill[]|Collection      $bills
- * @property null|int               $bills_count
- * @property Collection|PiggyBank[] $piggyBanks
- * @property null|int               $piggy_banks_count
- * @property User                   $user
- *
- * @method static Builder|ObjectGroup newModelQuery()
- * @method static Builder|ObjectGroup newQuery()
- * @method static Builder|ObjectGroup query()
- * @method static Builder|ObjectGroup whereCreatedAt($value)
- * @method static Builder|ObjectGroup whereDeletedAt($value)
- * @method static Builder|ObjectGroup whereId($value)
- * @method static Builder|ObjectGroup whereOrder($value)
- * @method static Builder|ObjectGroup whereTitle($value)
- * @method static Builder|ObjectGroup whereUpdatedAt($value)
- * @method static Builder|ObjectGroup whereUserId($value)
- *
- * @property int $user_group_id
- *
- * @method static Builder|ObjectGroup whereUserGroupId($value)
- *
- * @mixin Eloquent
- */
 class ObjectGroup extends Model
 {
     use ReturnsIntegerIdTrait;
@@ -79,10 +40,11 @@ class ObjectGroup extends Model
 
     protected $casts
                         = [
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-            'user_id'    => 'integer',
-            'deleted_at' => 'datetime',
+            'created_at'                   => 'datetime',
+            'updated_at'                   => 'datetime',
+            'user_id'                      => 'integer',
+            'user_group_id'                => 'integer',
+            'deleted_at'                   => 'datetime',
         ];
     protected $fillable = ['title', 'order', 'user_id', 'user_group_id'];
 
@@ -94,7 +56,7 @@ class ObjectGroup extends Model
     public static function routeBinder(string $value): self
     {
         if (auth()->check()) {
-            $objectGroupId = (int)$value;
+            $objectGroupId = (int) $value;
 
             /** @var null|ObjectGroup $objectGroup */
             $objectGroup   = self::where('object_groups.id', $objectGroupId)
@@ -140,7 +102,7 @@ class ObjectGroup extends Model
     protected function order(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 }

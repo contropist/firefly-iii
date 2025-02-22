@@ -61,7 +61,7 @@ class RuleRepository implements RuleRepositoryInterface
     public function duplicate(Rule $rule): Rule
     {
         $newRule        = $rule->replicate();
-        $newRule->title = (string)trans('firefly.rule_copy_of', ['title' => $rule->title]);
+        $newRule->title = (string) trans('firefly.rule_copy_of', ['title' => $rule->title]);
         $newRule->save();
 
         // replicate all triggers
@@ -96,12 +96,13 @@ class RuleRepository implements RuleRepositoryInterface
      */
     public function getFirstRuleGroup(): RuleGroup
     {
+        /** @var null|RuleGroup */
         return $this->user->ruleGroups()->first();
     }
 
     public function getHighestOrderInRuleGroup(RuleGroup $ruleGroup): int
     {
-        return (int)$ruleGroup->rules()->max('order');
+        return (int) $ruleGroup->rules()->max('order');
     }
 
     /**
@@ -150,7 +151,6 @@ class RuleRepository implements RuleRepositoryInterface
                 $params[] = sprintf('%s:true', OperatorQuerySearch::getRootOperator($trigger->trigger_type));
             }
             if (true === $needsContext) {
-                var_dump('x');
                 $params[] = sprintf('%s:"%s"', OperatorQuerySearch::getRootOperator($trigger->trigger_type), $trigger->trigger_value);
             }
         }
@@ -214,7 +214,7 @@ class RuleRepository implements RuleRepositoryInterface
     {
         $search = $this->user->rules();
         if ('' !== $query) {
-            $search->where('rules.title', 'LIKE', sprintf('%%%s%%', $query));
+            $search->whereLike('rules.title', sprintf('%%%s%%', $query));
         }
         $search->orderBy('rules.order', 'ASC')
             ->orderBy('rules.title', 'ASC')
@@ -238,6 +238,8 @@ class RuleRepository implements RuleRepositoryInterface
         if (null === $ruleGroup) {
             throw new FireflyException('No such rule group.');
         }
+
+        /** @var RuleGroup $ruleGroup */
 
         // start by creating a new rule:
         $rule                  = new Rule();
@@ -277,6 +279,7 @@ class RuleRepository implements RuleRepositoryInterface
 
     public function find(int $ruleId): ?Rule
     {
+        /** @var null|Rule */
         return $this->user->rules()->find($ruleId);
     }
 
@@ -353,7 +356,7 @@ class RuleRepository implements RuleRepositoryInterface
 
     public function maxOrder(RuleGroup $ruleGroup): int
     {
-        return (int)$ruleGroup->rules()->max('order');
+        return (int) $ruleGroup->rules()->max('order');
     }
 
     private function storeTriggers(Rule $rule, array $data): void
@@ -478,12 +481,15 @@ class RuleRepository implements RuleRepositoryInterface
         // update the order:
         $this->resetRuleOrder($group);
         if (array_key_exists('order', $data)) {
-            $this->moveRule($rule, $group, (int)$data['order']);
+            $this->moveRule($rule, $group, (int) $data['order']);
         }
 
         // update the triggers:
         if (array_key_exists('trigger', $data) && 'update-journal' === $data['trigger']) {
             $this->setRuleTrigger('update-journal', $rule);
+        }
+        if (array_key_exists('trigger', $data) && 'manual-activation' === $data['trigger']) {
+            $this->setRuleTrigger('manual-activation', $rule);
         }
         if (array_key_exists('trigger', $data) && 'store-journal' === $data['trigger']) {
             $this->setRuleTrigger('store-journal', $rule);

@@ -78,7 +78,7 @@ class MoveNotesToDescription implements ActionInterface
         }
         $before              = $object->description;
         $beforeNote          = $note->text;
-        $object->description = (string)$this->clearString($note->text);
+        $object->description = (string) $this->clearString($note->text);
         $object->save();
         $note->delete();
 
@@ -89,7 +89,7 @@ class MoveNotesToDescription implements ActionInterface
     }
 
     /**
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function get(string $key, mixed $default = null): mixed
     {
@@ -97,7 +97,7 @@ class MoveNotesToDescription implements ActionInterface
     }
 
     /**
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function has(mixed $key): mixed
     {

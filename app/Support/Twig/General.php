@@ -25,9 +25,13 @@ namespace FireflyIII\Support\Twig;
 
 use Carbon\Carbon;
 use FireflyIII\Models\Account;
+use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Repositories\User\UserRepositoryInterface;
+use FireflyIII\Support\Facades\Amount;
+use FireflyIII\Support\Facades\Steam;
 use FireflyIII\Support\Search\OperatorQuerySearch;
+use Illuminate\Support\Facades\Log;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use Route;
 use Twig\Extension\AbstractExtension;
@@ -63,9 +67,40 @@ class General extends AbstractExtension
                 }
 
                 /** @var Carbon $date */
-                $date = session('end', today(config('app.timezone'))->endOfMonth());
+                $date            = session('end', today(config('app.timezone'))->endOfMonth());
+                Log::debug(sprintf('twig balance: Call finalAccountBalance with date/time "%s"', $date->toIso8601String()));
+                $info            = Steam::finalAccountBalance($account, $date);
+                $currency        = Steam::getAccountCurrency($account);
+                $default         = Amount::getNativeCurrency();
+                $convertToNative = Amount::convertToNative();
+                $useNative       = $convertToNative && $default->id !== $currency->id;
+                $currency        = null === $currency ? $default : $currency;
+                $strings         = [];
+                foreach ($info as $key => $balance) {
+                    if ('balance' === $key) {
+                        // balance in account currency.
+                        if (!$useNative) {
+                            $strings[] = app('amount')->formatAnything($currency, $balance, false);
+                        }
 
-                return app('steam')->balance($account, $date);
+                        continue;
+                    }
+                    if ('native_balance' === $key) {
+                        // balance in native currency.
+                        if ($useNative) {
+                            $strings[] = app('amount')->formatAnything($default, $balance, false);
+                        }
+
+                        continue;
+                    }
+                    // for multi currency accounts.
+                    if ($useNative && $key !== $default->code) {
+                        $strings[] = app('amount')->formatAnything(TransactionCurrency::where('code', $key)->first(), $balance, false);
+                    }
+                }
+
+                return implode(', ', $strings);
+                // return app('steam')->balance($account, $date);
             }
         );
     }
@@ -96,7 +131,7 @@ class General extends AbstractExtension
     /**
      * Show icon with attachment.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings("PHPMD.CyclomaticComplexity")
      */
     protected function mimeIcon(): TwigFilter
     {
@@ -186,12 +221,12 @@ class General extends AbstractExtension
                 $converter = new GithubFlavoredMarkdownConverter(
                     [
                         'allow_unsafe_links' => false,
-                        'max_nesting_level'  => 3,
+                        'max_nesting_level'  => 5,
                         'html_input'         => 'escape',
                     ]
                 );
 
-                return (string)$converter->convert($text);
+                return (string) $converter->convert($text);
             },
             ['is_safe' => ['html']]
         );
@@ -205,8 +240,8 @@ class General extends AbstractExtension
         return new TwigFilter(
             'phphost',
             static function (string $string): string {
-                $proto = (string)parse_url($string, PHP_URL_SCHEME);
-                $host  = (string)parse_url($string, PHP_URL_HOST);
+                $proto = (string) parse_url($string, PHP_URL_SCHEME);
+                $host  = (string) parse_url($string, PHP_URL_HOST);
 
                 return e(sprintf('%s://%s', $proto, $host));
             }

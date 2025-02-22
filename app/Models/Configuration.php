@@ -23,38 +23,10 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Carbon\Carbon;
-use Eloquent;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Query\Builder;
 
-/**
- * FireflyIII\Models\Configuration
- *
- * @property int         $id
- * @property null|Carbon $created_at
- * @property null|Carbon $updated_at
- * @property null|Carbon $deleted_at
- * @property string      $name
- * @property mixed       $data
- *
- * @method static \Illuminate\Database\Eloquent\Builder|Configuration newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Configuration newQuery()
- * @method static Builder|Configuration                               onlyTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder|Configuration query()
- * @method static \Illuminate\Database\Eloquent\Builder|Configuration whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Configuration whereData($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Configuration whereDeletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Configuration whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Configuration whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Configuration whereUpdatedAt($value)
- * @method static Builder|Configuration                               withTrashed()
- * @method static Builder|Configuration                               withoutTrashed()
- *
- * @mixin Eloquent
- */
 class Configuration extends Model
 {
     use ReturnsIntegerIdTrait;
@@ -67,7 +39,6 @@ class Configuration extends Model
             'deleted_at' => 'datetime',
         ];
 
-    /** @var string The table to store the data in */
     protected $table = 'configuration';
 
     /**

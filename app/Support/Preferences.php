@@ -26,9 +26,12 @@ namespace FireflyIII\Support;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Preference;
 use FireflyIII\User;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Contracts\Encryption\EncryptException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 
 /**
@@ -69,20 +72,32 @@ class Preferences
 
     public function getForUser(User $user, string $name, null|array|bool|int|string $default = null): ?Preference
     {
+        Log::debug(sprintf('getForUser(#%d, "%s")', $user->id, $name));
         // don't care about user group ID, except for some specific preferences.
         $userGroupId = $this->getUserGroupId($user, $name);
-        $preference  = Preference::where('user_group_id', $userGroupId)->where('user_id', $user->id)->where('name', $name)->first(['id', 'user_id', 'name', 'data', 'updated_at', 'created_at']);
+        $query       = Preference::where('user_id', $user->id)->where('name', $name);
+        if (null !== $userGroupId) {
+            Log::debug('Include user group ID in query');
+            $query->where('user_group_id', $userGroupId);
+        }
+
+        $preference  = $query->first(['id', 'user_id', 'user_group_id', 'name', 'data', 'updated_at', 'created_at']);
 
         if (null !== $preference && null === $preference->data) {
             $preference->delete();
             $preference = null;
+            Log::debug('Removed empty preference.');
         }
 
         if (null !== $preference) {
+            Log::debug(sprintf('Found preference #%d for user #%d: %s', $preference->id, $user->id, $name));
+
             return $preference;
         }
         // no preference found and default is null:
         if (null === $default) {
+            Log::debug('Return NULL, create no preference.');
+
             // return NULL
             return null;
         }
@@ -95,7 +110,7 @@ class Preferences
         $groupId = null;
         $items   = config('firefly.admin_specific_prefs') ?? [];
         if (in_array($preferenceName, $items, true)) {
-            $groupId = (int)$user->user_group_id;
+            $groupId = (int) $user->user_group_id;
         }
 
         return $groupId;
@@ -121,37 +136,47 @@ class Preferences
 
     public function setForUser(User $user, string $name, null|array|bool|int|string $value): Preference
     {
-        $fullName   = sprintf('preference%s%s', $user->id, $name);
-        $groupId    = $this->getUserGroupId($user, $name);
+        $fullName         = sprintf('preference%s%s', $user->id, $name);
+        $userGroupId      = $this->getUserGroupId($user, $name);
+        $userGroupId      = 0 === (int) $userGroupId ? null : (int) $userGroupId;
+
         Cache::forget($fullName);
 
-        /** @var null|Preference $pref */
-        $pref       = Preference::where('user_group_id', $groupId)->where('user_id', $user->id)->where('name', $name)->first(['id', 'name', 'data', 'updated_at', 'created_at']);
+        $query            = Preference::where('user_id', $user->id)->where('name', $name);
+        if (null !== $userGroupId) {
+            Log::debug('Include user group ID in query');
+            $query->where('user_group_id', $userGroupId);
+        }
 
-        if (null !== $pref && null === $value) {
-            $pref->delete();
+        $preference       = $query->first(['id', 'user_id', 'user_group_id', 'name', 'data', 'updated_at', 'created_at']);
+
+        if (null !== $preference && null === $value) {
+            $preference->delete();
 
             return new Preference();
         }
         if (null === $value) {
             return new Preference();
         }
-        if (null === $pref) {
-            $pref                = new Preference();
-            $pref->user_id       = (int)$user->id;
-            $pref->user_group_id = $groupId;
-            $pref->name          = $name;
-        }
-        $pref->data = $value;
-        $pref->save();
-        Cache::forever($fullName, $pref);
+        if (null === $preference) {
+            $preference                = new Preference();
+            $preference->user_id       = (int) $user->id;
+            $preference->user_group_id = $userGroupId;
+            $preference->name          = $name;
 
-        return $pref;
+        }
+        $preference->data = $value;
+        $preference->save();
+        Cache::forever($fullName, $preference);
+
+        return $preference;
     }
 
     public function beginsWith(User $user, string $search): Collection
     {
-        return Preference::where('user_id', $user->id)->where('name', 'LIKE', $search.'%')->get();
+        $value = sprintf('%s%%', $search);
+
+        return Preference::where('user_id', $user->id)->whereLike('name', $value)->get();
     }
 
     /**
@@ -187,6 +212,58 @@ class Preferences
         return $result;
     }
 
+    public function getEncrypted(string $name, mixed $default = null): ?Preference
+    {
+        $result = $this->get($name, $default);
+        if (null === $result) {
+            return null;
+        }
+        if ('' === $result->data) {
+            // Log::warning(sprintf('Empty encrypted preference found: "%s"', $name));
+
+            return $result;
+        }
+
+        try {
+            $result->data = decrypt($result->data);
+        } catch (DecryptException $e) {
+            if ('The MAC is invalid.' === $e->getMessage()) {
+                Log::debug('Set data to NULL');
+                $result->data = null;
+            }
+            // Log::error(sprintf('Could not decrypt preference "%s": %s', $name, $e->getMessage()));
+
+            return $result;
+        }
+
+        return $result;
+    }
+
+    public function getEncryptedForUser(User $user, string $name, null|array|bool|int|string $default = null): ?Preference
+    {
+        $result = $this->getForUser($user, $name, $default);
+        if ('' === $result->data) {
+            // Log::warning(sprintf('Empty encrypted preference found: "%s"', $name));
+
+            return $result;
+        }
+
+        try {
+            $result->data = decrypt($result->data);
+        } catch (DecryptException $e) {
+            if ('The MAC is invalid.' === $e->getMessage()) {
+                Log::debug('Set data to NULL');
+                $result->data = null;
+            }
+            // Log::error(sprintf('Could not decrypt preference "%s": %s', $name, $e->getMessage()));
+
+            return $result;
+        }
+
+
+        return $result;
+    }
+
     public function getFresh(string $name, null|array|bool|int|string $default = null): ?Preference
     {
         /** @var null|User $user */
@@ -216,7 +293,7 @@ class Preferences
             $lastActivity = implode(',', $lastActivity);
         }
 
-        return hash('sha256', (string)$lastActivity);
+        return hash('sha256', (string) $lastActivity);
     }
 
     public function mark(): void
@@ -239,5 +316,18 @@ class Preferences
         }
 
         return $this->setForUser($user, $name, $value);
+    }
+
+    public function setEncrypted(string $name, mixed $value): Preference
+    {
+        try {
+            $encrypted = encrypt($value);
+        } catch (EncryptException $e) {
+            Log::error(sprintf('Could not encrypt preference "%s": %s', $name, $e->getMessage()));
+
+            throw new FireflyException(sprintf('Could not encrypt preference "%s". Cowardly refuse to continue.', $name));
+        }
+
+        return $this->set($name, $encrypted);
     }
 }

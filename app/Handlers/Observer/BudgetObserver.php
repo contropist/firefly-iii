@@ -23,8 +23,10 @@ declare(strict_types=1);
 
 namespace FireflyIII\Handlers\Observer;
 
+use FireflyIII\Models\Attachment;
 use FireflyIII\Models\Budget;
 use FireflyIII\Models\BudgetLimit;
+use FireflyIII\Repositories\Attachment\AttachmentRepositoryInterface;
 
 /**
  * Class BudgetObserver
@@ -34,8 +36,13 @@ class BudgetObserver
     public function deleting(Budget $budget): void
     {
         app('log')->debug('Observe "deleting" of a budget.');
+
+        $repository   = app(AttachmentRepositoryInterface::class);
+        $repository->setUser($budget->user);
+
+        /** @var Attachment $attachment */
         foreach ($budget->attachments()->get() as $attachment) {
-            $attachment->delete();
+            $repository->destroy($attachment);
         }
         $budgetLimits = $budget->budgetlimits()->get();
 

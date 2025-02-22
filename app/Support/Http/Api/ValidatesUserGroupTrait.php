@@ -1,4 +1,5 @@
 <?php
+
 /*
  * ValidatesUserGroupTrait.php
  * Copyright (c) 2023 james@firefly-iii.org
@@ -37,7 +38,13 @@ use Illuminate\Support\Facades\Log;
  */
 trait ValidatesUserGroupTrait
 {
+    protected ?UserGroup $userGroup = null;
+
     /**
+     * An "undocumented" filter
+     *
+     * TODO add this filter to the API docs.
+     *
      * @throws AuthorizationException
      * @throws AuthenticationException
      */
@@ -54,7 +61,7 @@ trait ValidatesUserGroupTrait
         $user        = auth()->user();
         $groupId     = 0;
         if (!$request->has('user_group_id')) {
-            $groupId = $user->user_group_id;
+            $groupId = (int) $user->user_group_id;
             Log::debug(sprintf('validateUserGroup: no user group submitted, use default group #%d.', $groupId));
         }
         if ($request->has('user_group_id')) {
@@ -81,7 +88,7 @@ trait ValidatesUserGroupTrait
             throw new AuthorizationException((string) trans('validation.belongs_user_or_user_group'));
         }
         Log::debug(sprintf('validateUserGroup: validate access of user to group #%d ("%s").', $groupId, $group->title));
-        $roles       = property_exists($this, 'acceptedRoles') ? $this->acceptedRoles : [];
+        $roles       = property_exists($this, 'acceptedRoles') ? $this->acceptedRoles : []; // @phpstan-ignore-line
         if (0 === count($roles)) {
             Log::debug('validateUserGroup: no roles defined, so no access.');
 
@@ -93,6 +100,7 @@ trait ValidatesUserGroupTrait
         foreach ($roles as $role) {
             if ($user->hasRoleInGroupOrOwner($group, $role)) {
                 Log::debug(sprintf('validateUserGroup: User has role "%s" in group #%d, return the group.', $role->value, $groupId));
+                $this->userGroup = $group;
 
                 return $group;
             }

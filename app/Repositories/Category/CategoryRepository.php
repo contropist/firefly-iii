@@ -33,6 +33,7 @@ use FireflyIII\Models\RecurrenceTransactionMeta;
 use FireflyIII\Models\RuleAction;
 use FireflyIII\Services\Internal\Destroy\CategoryDestroyService;
 use FireflyIII\Services\Internal\Update\CategoryUpdateService;
+use FireflyIII\Support\Repositories\UserGroup\UserGroupTrait;
 use FireflyIII\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
@@ -43,13 +44,13 @@ use Illuminate\Support\Facades\Log;
  */
 class CategoryRepository implements CategoryRepositoryInterface
 {
-    private User $user;
+    use UserGroupTrait;
 
     public function categoryEndsWith(string $query, int $limit): Collection
     {
         $search = $this->user->categories();
         if ('' !== $query) {
-            $search->where('name', 'LIKE', sprintf('%%%s', $query));
+            $search->whereLike('name', sprintf('%%%s', $query));
         }
 
         return $search->take($limit)->get();
@@ -59,7 +60,7 @@ class CategoryRepository implements CategoryRepositoryInterface
     {
         $search = $this->user->categories();
         if ('' !== $query) {
-            $search->where('name', 'LIKE', sprintf('%s%%', $query));
+            $search->whereLike('name', sprintf('%s%%', $query));
         }
 
         return $search->take($limit)->get();
@@ -107,11 +108,11 @@ class CategoryRepository implements CategoryRepositoryInterface
     {
         app('log')->debug('Now in findCategory()');
         app('log')->debug(sprintf('Searching for category with ID #%d...', $categoryId));
-        $result = $this->find((int)$categoryId);
+        $result = $this->find((int) $categoryId);
         if (null === $result) {
             app('log')->debug(sprintf('Searching for category with name %s...', $categoryName));
-            $result = $this->findByName((string)$categoryName);
-            if (null === $result && '' !== (string)$categoryName) {
+            $result = $this->findByName((string) $categoryName);
+            if (null === $result && '' !== (string) $categoryName) {
                 // create it!
                 $result = $this->store(['name' => $categoryName]);
             }
@@ -129,6 +130,7 @@ class CategoryRepository implements CategoryRepositoryInterface
      */
     public function find(int $categoryId): ?Category
     {
+        /** @var null|Category */
         return $this->user->categories()->find($categoryId);
     }
 
@@ -137,6 +139,7 @@ class CategoryRepository implements CategoryRepositoryInterface
      */
     public function findByName(string $name): ?Category
     {
+        /** @var null|Category */
         return $this->user->categories()->where('name', $name)->first(['categories.*']);
     }
 
@@ -246,7 +249,7 @@ class CategoryRepository implements CategoryRepositoryInterface
         $disk = \Storage::disk('upload');
 
         return $set->each(
-            static function (Attachment $attachment) use ($disk) {
+            static function (Attachment $attachment) use ($disk) { // @phpstan-ignore-line
                 $notes                   = $attachment->notes()->first();
                 $attachment->file_exists = $disk->exists($attachment->fileName());
                 $attachment->notes_text  = null !== $notes ? $notes->text : '';
@@ -344,7 +347,7 @@ class CategoryRepository implements CategoryRepositoryInterface
     {
         $search = $this->user->categories();
         if ('' !== $query) {
-            $search->where('name', 'LIKE', sprintf('%%%s%%', $query));
+            $search->whereLike('name', sprintf('%%%s%%', $query));
         }
 
         return $search->take($limit)->get();

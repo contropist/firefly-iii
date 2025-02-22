@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AccountValidator.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,9 +24,9 @@ declare(strict_types=1);
 
 namespace FireflyIII\Validation;
 
+use FireflyIII\Enums\AccountTypeEnum;
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Models\Account;
-use FireflyIII\Models\AccountType;
-use FireflyIII\Models\TransactionType;
 use FireflyIII\Models\UserGroup;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Repositories\UserGroups\Account\AccountRepositoryInterface as UserGroupAccountRepositoryInterface;
@@ -86,7 +87,7 @@ class AccountValidator
             app('log')->debug('AccountValidator source is set to NULL');
         }
         if (null !== $account) {
-            app('log')->debug(sprintf('AccountValidator source is set to #%d: "%s" (%s)', $account->id, $account->name, $account->accountType->type));
+            app('log')->debug(sprintf('AccountValidator source is set to #%d: "%s" (%s)', $account->id, $account->name, $account->accountType?->type));
         }
         $this->source = $account;
     }
@@ -139,32 +140,32 @@ class AccountValidator
 
                 break;
 
-            case TransactionType::WITHDRAWAL:
+            case TransactionTypeEnum::WITHDRAWAL->value:
                 $result          = $this->validateWithdrawalDestination($array);
 
                 break;
 
-            case TransactionType::DEPOSIT:
+            case TransactionTypeEnum::DEPOSIT->value:
                 $result          = $this->validateDepositDestination($array);
 
                 break;
 
-            case TransactionType::TRANSFER:
+            case TransactionTypeEnum::TRANSFER->value:
                 $result          = $this->validateTransferDestination($array);
 
                 break;
 
-            case TransactionType::OPENING_BALANCE:
+            case TransactionTypeEnum::OPENING_BALANCE->value:
                 $result          = $this->validateOBDestination($array);
 
                 break;
 
-            case TransactionType::LIABILITY_CREDIT:
+            case TransactionTypeEnum::LIABILITY_CREDIT->value:
                 $result          = $this->validateLCDestination($array);
 
                 break;
 
-            case TransactionType::RECONCILIATION:
+            case TransactionTypeEnum::RECONCILIATION->value:
                 $result          = $this->validateReconciliationDestination($array);
 
                 break;
@@ -184,32 +185,32 @@ class AccountValidator
 
                 break;
 
-            case TransactionType::WITHDRAWAL:
+            case TransactionTypeEnum::WITHDRAWAL->value:
                 $result = $this->validateWithdrawalSource($array);
 
                 break;
 
-            case TransactionType::DEPOSIT:
+            case TransactionTypeEnum::DEPOSIT->value:
                 $result = $this->validateDepositSource($array);
 
                 break;
 
-            case TransactionType::TRANSFER:
+            case TransactionTypeEnum::TRANSFER->value:
                 $result = $this->validateTransferSource($array);
 
                 break;
 
-            case TransactionType::OPENING_BALANCE:
+            case TransactionTypeEnum::OPENING_BALANCE->value:
                 $result = $this->validateOBSource($array);
 
                 break;
 
-            case TransactionType::LIABILITY_CREDIT:
+            case TransactionTypeEnum::LIABILITY_CREDIT->value:
                 $result = $this->validateLCSource($array);
 
                 break;
 
-            case TransactionType::RECONCILIATION:
+            case TransactionTypeEnum::RECONCILIATION->value:
                 app('log')->debug('Calling validateReconciliationSource');
                 $result = $this->validateReconciliationSource($array);
 
@@ -238,7 +239,7 @@ class AccountValidator
 
     protected function canCreateType(string $accountType): bool
     {
-        $canCreate = [AccountType::EXPENSE, AccountType::REVENUE, AccountType::INITIAL_BALANCE, AccountType::LIABILITY_CREDIT];
+        $canCreate = [AccountTypeEnum::EXPENSE->value, AccountTypeEnum::REVENUE->value, AccountTypeEnum::INITIAL_BALANCE->value, AccountTypeEnum::LIABILITY_CREDIT->value];
         if (in_array($accountType, $canCreate, true)) {
             return true;
         }
@@ -249,9 +250,9 @@ class AccountValidator
     /**
      * It's a long and fairly complex method, but I don't mind.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings("PHPMD.CyclomaticComplexity")
+     * @SuppressWarnings("PHPMD.BooleanArgumentFlag")
+     * @SuppressWarnings("PHPMD.NPathComplexity")
      */
     protected function findExistingAccount(array $validTypes, array $data, bool $inverse = false): ?Account
     {
@@ -276,7 +277,7 @@ class AccountValidator
         }
 
         // find by iban
-        if (null !== $accountIban && '' !== (string)$accountIban) {
+        if (null !== $accountIban && '' !== (string) $accountIban) {
             $first       = $this->getRepository()->findByIbanNull($accountIban, $validTypes);
             $accountType = null === $first ? 'invalid' : $first->accountType->type;
             $check       = in_array($accountType, $validTypes, true);
@@ -289,7 +290,7 @@ class AccountValidator
         }
 
         // find by number
-        if (null !== $accountNumber && '' !== (string)$accountNumber) {
+        if (null !== $accountNumber && '' !== (string) $accountNumber) {
             $first       = $this->getRepository()->findByAccountNumber($accountNumber, $validTypes);
             $accountType = null === $first ? 'invalid' : $first->accountType->type;
             $check       = in_array($accountType, $validTypes, true);
@@ -302,7 +303,7 @@ class AccountValidator
         }
 
         // find by name:
-        if ('' !== (string)$accountName) {
+        if ('' !== (string) $accountName) {
             $first = $this->getRepository()->findByName($accountName, $validTypes);
             if (null !== $first) {
                 app('log')->debug(sprintf('Name: Found %s account #%d ("%s", IBAN "%s")', $first->accountType->type, $first->id, $first->name, $first->iban ?? 'no iban'));

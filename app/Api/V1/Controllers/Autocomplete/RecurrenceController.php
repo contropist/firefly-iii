@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RecurrenceController.php
  * Copyright (c) 2020 james@firefly-iii.org
@@ -66,12 +67,12 @@ class RecurrenceController extends Controller
         /** @var Recurrence $recurrence */
         foreach ($recurrences as $recurrence) {
             $response[] = [
-                'id'          => (string)$recurrence->id,
+                'id'          => (string) $recurrence->id,
                 'name'        => $recurrence->title,
                 'description' => $recurrence->description,
             ];
         }
 
-        return response()->json($response);
+        return response()->api($response);
     }
 }

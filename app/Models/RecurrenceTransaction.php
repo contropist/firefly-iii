@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RecurrenceTransaction.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,68 +24,13 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Carbon\Carbon;
-use Eloquent;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Query\Builder;
 
-/**
- * FireflyIII\Models\RecurrenceTransaction
- *
- * @property int                                    $id
- * @property null|Carbon                            $created_at
- * @property null|Carbon                            $updated_at
- * @property null|Carbon                            $deleted_at
- * @property int                                    $recurrence_id
- * @property int                                    $transaction_currency_id
- * @property null|int|string                        $foreign_currency_id
- * @property int                                    $source_id
- * @property int                                    $destination_id
- * @property string                                 $amount
- * @property string                                 $foreign_amount
- * @property string                                 $description
- * @property Account                                $destinationAccount
- * @property null|TransactionCurrency               $foreignCurrency
- * @property Recurrence                             $recurrence
- * @property Collection|RecurrenceTransactionMeta[] $recurrenceTransactionMeta
- * @property null|int                               $recurrence_transaction_meta_count
- * @property Account                                $sourceAccount
- * @property TransactionCurrency                    $transactionCurrency
- *
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction newQuery()
- * @method static Builder|RecurrenceTransaction                               onlyTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction query()
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereAmount($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereDeletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereDestinationId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereForeignAmount($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereForeignCurrencyId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereRecurrenceId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereSourceId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereTransactionCurrencyId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereUpdatedAt($value)
- * @method static Builder|RecurrenceTransaction                               withTrashed()
- * @method static Builder|RecurrenceTransaction                               withoutTrashed()
- *
- * @property null|int $transaction_type_id
- *
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransaction whereTransactionTypeId($value)
- *
- * @property null|TransactionType $transactionType
- * @property mixed                $user_id
- *
- * @mixin Eloquent
- */
 class RecurrenceTransaction extends Model
 {
     use ReturnsIntegerIdTrait;
@@ -112,7 +58,6 @@ class RecurrenceTransaction extends Model
             'description',
         ];
 
-    /** @var string The table to store the data in */
     protected $table = 'recurrences_transactions';
 
     public function destinationAccount(): BelongsTo
@@ -153,49 +98,49 @@ class RecurrenceTransaction extends Model
     protected function amount(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (string)$value,
+            get: static fn ($value) => (string) $value,
         );
     }
 
     protected function destinationId(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 
     protected function foreignAmount(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (string)$value,
+            get: static fn ($value) => (string) $value,
         );
     }
 
     protected function recurrenceId(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 
     protected function sourceId(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 
     protected function transactionCurrencyId(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 
     protected function userId(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 }

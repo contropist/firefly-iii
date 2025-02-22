@@ -1,4 +1,5 @@
 <?php
+
 /**
  * VerifiesAccessToken.php
  * Copyright (c) 2020 james@firefly-iii.org
@@ -39,7 +40,7 @@ trait VerifiesAccessToken
      */
     public function getUser(): User
     {
-        $userId     = (int)$this->option('user');
+        $userId     = (int) $this->option('user');
 
         /** @var UserRepositoryInterface $repository */
         $repository = app(UserRepositoryInterface::class);
@@ -67,8 +68,8 @@ trait VerifiesAccessToken
      */
     protected function verifyAccessToken(): bool
     {
-        $userId      = (int)$this->option('user');
-        $token       = (string)$this->option('token');
+        $userId      = (int) $this->option('user');
+        $token       = (string) $this->option('token');
 
         /** @var UserRepositoryInterface $repository */
         $repository  = app(UserRepositoryInterface::class);

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * ListController.php
  * Copyright (c) 2021 james@firefly-iii.org
@@ -27,8 +28,11 @@ use FireflyIII\Api\V1\Controllers\Controller;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\PiggyBank;
 use FireflyIII\Repositories\PiggyBank\PiggyBankRepositoryInterface;
+use FireflyIII\Support\JsonApi\Enrichments\AccountEnrichment;
+use FireflyIII\Transformers\AccountTransformer;
 use FireflyIII\Transformers\AttachmentTransformer;
 use FireflyIII\Transformers\PiggyBankEventTransformer;
+use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use League\Fractal\Pagination\IlluminatePaginatorAdapter;
@@ -55,6 +59,47 @@ class ListController extends Controller
                 return $next($request);
             }
         );
+    }
+
+    /**
+     * This endpoint is documented at:
+     * https://api-docs.firefly-iii.org/?urls.primaryName=2.0.0%20(v1)#/piggy_banks/listAccountByPiggyBank
+     *
+     * List single resource.
+     *
+     * @throws FireflyException
+     */
+    public function accounts(PiggyBank $piggyBank): JsonResponse
+    {
+        // types to get, page size:
+        $pageSize    = $this->parameters->get('limit');
+        $manager     = $this->getManager();
+
+        $collection  = $piggyBank->accounts;
+        $count       = $collection->count();
+        $accounts    = $collection->slice(($this->parameters->get('page') - 1) * $pageSize, $pageSize);
+
+        // enrich
+        /** @var User $admin */
+        $admin       = auth()->user();
+        $enrichment  = new AccountEnrichment();
+        $enrichment->setUser($admin);
+        $enrichment->setConvertToNative($this->convertToNative);
+        $enrichment->setNative($this->nativeCurrency);
+        $accounts    = $enrichment->enrich($accounts);
+
+        // make paginator:
+        $paginator   = new LengthAwarePaginator($accounts, $count, $pageSize, $this->parameters->get('page'));
+        $paginator->setPath(route('api.v1.piggy-banks.accounts', [$piggyBank->id]).$this->buildParams());
+
+        /** @var AccountTransformer $transformer */
+        $transformer = app(AccountTransformer::class);
+        $transformer->setParameters($this->parameters);
+
+        $resource    = new FractalCollection($accounts, $transformer, 'accounts');
+        $resource->setPaginator(new IlluminatePaginatorAdapter($paginator));
+
+        return response()->json($manager->createData($resource)->toArray())->header('Content-Type', self::CONTENT_TYPE);
     }
 
     /**

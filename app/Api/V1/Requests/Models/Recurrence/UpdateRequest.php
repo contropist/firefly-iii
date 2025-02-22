@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RecurrenceUpdateRequest.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -100,15 +101,15 @@ class UpdateRequest extends FormRequest
             }
 
             if (array_key_exists('moment', $repetition)) {
-                $current['moment'] = (string)$repetition['moment'];
+                $current['moment'] = (string) $repetition['moment'];
             }
 
             if (array_key_exists('skip', $repetition)) {
-                $current['skip'] = (int)$repetition['skip'];
+                $current['skip'] = (int) $repetition['skip'];
             }
 
             if (array_key_exists('weekend', $repetition)) {
-                $current['weekend'] = (int)$repetition['weekend'];
+                $current['weekend'] = (int) $repetition['weekend'];
             }
             $return[] = $current;
         }
@@ -153,7 +154,7 @@ class UpdateRequest extends FormRequest
         return [
             'title'                                => sprintf('min:1|max:255|uniqueObjectForUser:recurrences,title,%d', $recurrence->id),
             'description'                          => 'min:1|max:32768',
-            'first_date'                           => 'date',
+            'first_date'                           => 'date|after:1900-01-01|before:2099-12-31',
             'apply_rules'                          => [new IsBoolean()],
             'active'                               => [new IsBoolean()],
             'repeat_until'                         => 'nullable|date',

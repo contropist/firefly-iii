@@ -39,7 +39,7 @@ class PiggyBankEventHandler
         if (null !== $event->transactionGroup) {
             $journal = $event->transactionGroup->transactionJournals()->first();
         }
-        $date    = $journal?->date ?? today(config('app.timezone'));
+        $date    = $journal->date ?? today(config('app.timezone'));
         // sanity check: event must not already exist for this journal and piggy bank.
         if (null !== $journal) {
             $exists = PiggyBankEvent::where('piggy_bank_id', $event->piggyBank->id)
@@ -58,6 +58,7 @@ class PiggyBankEventHandler
                 'piggy_bank_id'          => $event->piggyBank->id,
                 'transaction_journal_id' => $journal?->id,
                 'date'                   => $date->format('Y-m-d'),
+                'date_tz'                => $date->format('e'),
                 'amount'                 => $event->amount,
             ]
         );

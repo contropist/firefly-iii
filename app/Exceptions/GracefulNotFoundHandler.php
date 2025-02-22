@@ -1,4 +1,5 @@
 <?php
+
 /**
  * GracefulNotFoundHandler.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,12 +24,12 @@ declare(strict_types=1);
 
 namespace FireflyIII\Exceptions;
 
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Models\Account;
 use FireflyIII\Models\Attachment;
 use FireflyIII\Models\Bill;
 use FireflyIII\Models\TransactionGroup;
 use FireflyIII\Models\TransactionJournal;
-use FireflyIII\Models\TransactionType;
 use FireflyIII\User;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\Request;
@@ -46,7 +47,7 @@ class GracefulNotFoundHandler extends ExceptionHandler
      *
      * @throws \Throwable
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings("PHPMD.CyclomaticComplexity")
      */
     public function render($request, \Throwable $e): Response
     {
@@ -157,7 +158,7 @@ class GracefulNotFoundHandler extends ExceptionHandler
             $accountId = $param->id;
         }
         if (!($param instanceof Account) && !is_object($param)) {
-            $accountId = (int)$param;
+            $accountId = (int) $param;
         }
 
         /** @var null|Account $account */
@@ -187,7 +188,7 @@ class GracefulNotFoundHandler extends ExceptionHandler
         $user    = auth()->user();
         $route   = $request->route();
         $param   = $route->parameter('transactionGroup');
-        $groupId = !is_object($param) ? (int)$param : 0;
+        $groupId = !is_object($param) ? (int) $param : 0;
 
         /** @var null|TransactionGroup $group */
         $group   = $user->transactionGroups()->withTrashed()->find($groupId);
@@ -207,7 +208,7 @@ class GracefulNotFoundHandler extends ExceptionHandler
         $type    = $journal->transactionType->type;
         $request->session()->reflash();
 
-        if (TransactionType::RECONCILIATION === $type) {
+        if (TransactionTypeEnum::RECONCILIATION->value === $type) {
             return redirect(route('accounts.index', ['asset']));
         }
 
@@ -227,7 +228,7 @@ class GracefulNotFoundHandler extends ExceptionHandler
         $user         = auth()->user();
         $route        = $request->route();
         $param        = $route->parameter('attachment');
-        $attachmentId = is_object($param) ? 0 : (int)$param;
+        $attachmentId = is_object($param) ? 0 : (int) $param;
 
         /** @var null|Attachment $attachment */
         $attachment   = $user->attachments()->withTrashed()->find($attachmentId);

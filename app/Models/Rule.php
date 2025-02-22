@@ -23,70 +23,16 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Carbon\Carbon;
-use Eloquent;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use FireflyIII\Support\Models\ReturnsIntegerUserIdTrait;
 use FireflyIII\User;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Query\Builder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-/**
- * FireflyIII\Models\Rule
- *
- * @property int                      $id
- * @property null|Carbon              $created_at
- * @property null|Carbon              $updated_at
- * @property null|Carbon              $deleted_at
- * @property int                      $user_id
- * @property int                      $rule_group_id
- * @property string                   $title
- * @property null|string              $description
- * @property int                      $order
- * @property bool                     $active
- * @property bool                     $stop_processing
- * @property bool                     $strict
- * @property string                   $action_value
- * @property Collection|RuleAction[]  $ruleActions
- * @property null|int                 $rule_actions_count
- * @property RuleGroup                $ruleGroup
- * @property Collection|RuleTrigger[] $ruleTriggers
- * @property null|int                 $rule_triggers_count
- * @property User                     $user
- *
- * @method static \Illuminate\Database\Eloquent\Builder|Rule newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Rule newQuery()
- * @method static Builder|Rule                               onlyTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder|Rule query()
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereActive($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereDeletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereOrder($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereRuleGroupId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereStopProcessing($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereStrict($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereTitle($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereUserId($value)
- * @method static Builder|Rule                               withTrashed()
- * @method static Builder|Rule                               withoutTrashed()
- *
- * @property int $user_group_id
- *
- * @method static \Illuminate\Database\Eloquent\Builder|Rule whereUserGroupId($value)
- *
- * @property null|UserGroup $userGroup
- *
- * @mixin Eloquent
- */
 class Rule extends Model
 {
     use ReturnsIntegerIdTrait;
@@ -95,17 +41,19 @@ class Rule extends Model
 
     protected $casts
                         = [
-            'created_at'      => 'datetime',
-            'updated_at'      => 'datetime',
-            'deleted_at'      => 'datetime',
-            'active'          => 'boolean',
-            'order'           => 'int',
-            'stop_processing' => 'boolean',
-            'id'              => 'int',
-            'strict'          => 'boolean',
+            'created_at'                   => 'datetime',
+            'updated_at'                   => 'datetime',
+            'deleted_at'                   => 'datetime',
+            'active'                       => 'boolean',
+            'order'                        => 'int',
+            'stop_processing'              => 'boolean',
+            'id'                           => 'int',
+            'strict'                       => 'boolean',
+            'user_id'                      => 'integer',
+            'user_group_id'                => 'integer',
         ];
 
-    protected $fillable = ['rule_group_id', 'order', 'active', 'title', 'description', 'user_id', 'strict'];
+    protected $fillable = ['rule_group_id', 'order', 'active', 'title', 'description', 'user_id', 'user_group_id', 'strict'];
 
     /**
      * Route binder. Converts the key in the URL to the specified object (or throw 404).
@@ -115,7 +63,7 @@ class Rule extends Model
     public static function routeBinder(string $value): self
     {
         if (auth()->check()) {
-            $ruleId = (int)$value;
+            $ruleId = (int) $value;
 
             /** @var User $user */
             $user   = auth()->user();
@@ -166,14 +114,14 @@ class Rule extends Model
     protected function order(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 
     protected function ruleGroupId(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 }

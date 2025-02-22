@@ -59,7 +59,7 @@ class ExportController extends Controller
      *
      * @throws FireflyException
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function accounts(ExportRequest $request): LaravelResponse
     {
@@ -88,7 +88,7 @@ class ExportController extends Controller
             ->header('Expires', '0')
             ->header('Cache-Control', 'must-revalidate, post-check=0, pre-check=0')
             ->header('Pragma', 'public')
-            ->header('Content-Length', (string)strlen($data[$key]))
+            ->header('Content-Length', (string) strlen($data[$key]))
         ;
 
         return $response;
@@ -100,7 +100,7 @@ class ExportController extends Controller
      *
      * @throws FireflyException
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function bills(ExportRequest $request): LaravelResponse
     {
@@ -115,7 +115,7 @@ class ExportController extends Controller
      *
      * @throws FireflyException
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function budgets(ExportRequest $request): LaravelResponse
     {
@@ -130,7 +130,7 @@ class ExportController extends Controller
      *
      * @throws FireflyException
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function categories(ExportRequest $request): LaravelResponse
     {
@@ -145,7 +145,7 @@ class ExportController extends Controller
      *
      * @throws FireflyException
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function piggyBanks(ExportRequest $request): LaravelResponse
     {
@@ -160,7 +160,7 @@ class ExportController extends Controller
      *
      * @throws FireflyException
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function recurring(ExportRequest $request): LaravelResponse
     {
@@ -175,7 +175,7 @@ class ExportController extends Controller
      *
      * @throws FireflyException
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function rules(ExportRequest $request): LaravelResponse
     {
@@ -190,7 +190,7 @@ class ExportController extends Controller
      *
      * @throws FireflyException
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function tags(ExportRequest $request): LaravelResponse
     {

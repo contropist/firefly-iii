@@ -30,6 +30,7 @@ use FireflyIII\Factory\UserGroupFactory;
 use FireflyIII\Models\GroupMembership;
 use FireflyIII\Models\UserGroup;
 use FireflyIII\Models\UserRole;
+use FireflyIII\Repositories\UserGroups\Currency\CurrencyRepositoryInterface;
 use FireflyIII\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
@@ -174,6 +175,18 @@ class UserGroupRepository implements UserGroupRepositoryInterface
         return UserGroup::all();
     }
 
+    #[\Override]
+    public function getById(int $id): ?UserGroup
+    {
+        return UserGroup::find($id);
+    }
+
+    #[\Override]
+    public function getMembershipsFromGroupId(int $groupId): Collection
+    {
+        return $this->user->groupMemberships()->where('user_group_id', $groupId)->get();
+    }
+
     public function setUser(null|Authenticatable|User $user): void
     {
         app('log')->debug(sprintf('Now in %s', __METHOD__));
@@ -186,12 +199,30 @@ class UserGroupRepository implements UserGroupRepositoryInterface
     {
         $userGroup->title = $data['title'];
         $userGroup->save();
+        $currency         = null;
+
+        /** @var CurrencyRepositoryInterface $repository */
+        $repository       = app(CurrencyRepositoryInterface::class);
+
+        if (array_key_exists('native_currency_code', $data)) {
+            $repository->setUser($this->user);
+            $currency = $repository->findByCode($data['native_currency_code']);
+        }
+
+        if (array_key_exists('native_currency_id', $data) && null === $currency) {
+            $repository->setUser($this->user);
+            $currency = $repository->find((int) $data['native_currency_id']);
+        }
+        if (null !== $currency) {
+            $repository->makeDefault($currency);
+        }
+
 
         return $userGroup;
     }
 
     /**
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings("PHPMD.NPathComplexity")
      *
      * @throws FireflyException
      */
@@ -207,7 +238,7 @@ class UserGroupRepository implements UserGroupRepositoryInterface
             $user = User::find($data['id']);
             app('log')->debug('Found user by ID');
         }
-        if (array_key_exists('email', $data) && '' !== (string)$data['email']) {
+        if (array_key_exists('email', $data) && '' !== (string) $data['email']) {
             /** @var null|User $user */
             $user = User::whereEmail($data['email'])->first();
             app('log')->debug('Found user by email');
@@ -225,13 +256,13 @@ class UserGroupRepository implements UserGroupRepositoryInterface
         if (1 === $membershipCount) {
             $lastUserId = $userGroup->groupMemberships()->distinct()->first(['group_memberships.user_id'])->user_id;
             // if this is also the user we're editing right now, and we remove all of their roles:
-            if ($lastUserId === (int)$user->id && 0 === count($data['roles'])) {
+            if ($lastUserId === (int) $user->id && 0 === count($data['roles'])) {
                 app('log')->debug('User is last in this group, refuse to act');
 
                 throw new FireflyException('You cannot remove the last member from this user group. Delete the user group instead.');
             }
             // if this is also the user we're editing right now, and do not grant them the owner role:
-            if ($lastUserId === (int)$user->id && count($data['roles']) > 0 && !in_array(UserRoleEnum::OWNER->value, $data['roles'], true)) {
+            if ($lastUserId === (int) $user->id && count($data['roles']) > 0 && !in_array(UserRoleEnum::OWNER->value, $data['roles'], true)) {
                 app('log')->debug('User needs to have owner role in this group, refuse to act');
 
                 throw new FireflyException('The last member in this user group must get or keep the "owner" role.');
@@ -294,17 +325,5 @@ class UserGroupRepository implements UserGroupRepositoryInterface
     {
         $this->user->user_group_id = $userGroup->id;
         $this->user->save();
-    }
-
-    #[\Override]
-    public function getMembershipsFromGroupId(int $groupId): Collection
-    {
-        return $this->user->groupMemberships()->where('user_group_id', $groupId)->get();
-    }
-
-    #[\Override]
-    public function getById(int $id): ?UserGroup
-    {
-        return UserGroup::find($id);
     }
 }

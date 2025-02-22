@@ -1,4 +1,5 @@
 <?php
+
 /*
  * ListController.php
  * Copyright (c) 2021 james@firefly-iii.org
@@ -29,6 +30,7 @@ use FireflyIII\Helpers\Collector\GroupCollectorInterface;
 use FireflyIII\Models\Bill;
 use FireflyIII\Repositories\Bill\BillRepositoryInterface;
 use FireflyIII\Support\Http\Api\TransactionFilter;
+use FireflyIII\Support\JsonApi\Enrichments\TransactionGroupEnrichment;
 use FireflyIII\Transformers\AttachmentTransformer;
 use FireflyIII\Transformers\RuleTransformer;
 use FireflyIII\Transformers\TransactionGroupTransformer;
@@ -175,7 +177,11 @@ class ListController extends Controller
         // get paginator.
         $paginator    = $collector->getPaginatedGroups();
         $paginator->setPath(route('api.v1.bills.transactions', [$bill->id]).$this->buildParams());
-        $transactions = $paginator->getCollection();
+
+        // enrich
+        $enrichment   = new TransactionGroupEnrichment();
+        $enrichment->setUser($admin);
+        $transactions = $enrichment->enrich($paginator->getCollection());
 
         /** @var TransactionGroupTransformer $transformer */
         $transformer  = app(TransactionGroupTransformer::class);

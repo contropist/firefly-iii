@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace FireflyIII\Models;
 
 use Carbon\Carbon;
-use Eloquent;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use FireflyIII\Support\Models\ReturnsIntegerUserIdTrait;
 use FireflyIII\User;
@@ -32,46 +31,8 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Query\Builder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-/**
- * FireflyIII\Models\AvailableBudget
- *
- * @property int                 $id
- * @property null|Carbon         $created_at
- * @property null|Carbon         $updated_at
- * @property null|Carbon         $deleted_at
- * @property int                 $user_id
- * @property int                 $transaction_currency_id
- * @property string              $amount
- * @property Carbon              $start_date
- * @property Carbon              $end_date
- * @property TransactionCurrency $transactionCurrency
- * @property User                $user
- *
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget newQuery()
- * @method static Builder|AvailableBudget                               onlyTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget query()
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget whereAmount($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget whereDeletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget whereEndDate($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget whereStartDate($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget whereTransactionCurrencyId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget whereUserId($value)
- * @method static Builder|AvailableBudget                               withTrashed()
- * @method static Builder|AvailableBudget                               withoutTrashed()
- *
- * @property int $user_group_id
- *
- * @method static \Illuminate\Database\Eloquent\Builder|AvailableBudget whereUserGroupId($value)
- *
- * @mixin Eloquent
- */
 class AvailableBudget extends Model
 {
     use ReturnsIntegerIdTrait;
@@ -80,15 +41,19 @@ class AvailableBudget extends Model
 
     protected $casts
                         = [
-            'created_at'              => 'datetime',
-            'updated_at'              => 'datetime',
-            'deleted_at'              => 'datetime',
-            'start_date'              => 'date',
-            'end_date'                => 'date',
-            'transaction_currency_id' => 'int',
+            'created_at'                   => 'datetime',
+            'updated_at'                   => 'datetime',
+            'deleted_at'                   => 'datetime',
+            'start_date'                   => 'date',
+            'end_date'                     => 'date',
+            'transaction_currency_id'      => 'int',
+            'amount'                       => 'string',
+            'native_amount'                => 'string',
+            'user_id'                      => 'integer',
+            'user_group_id'                => 'integer',
         ];
 
-    protected $fillable = ['user_id', 'user_group_id', 'transaction_currency_id', 'amount', 'start_date', 'end_date'];
+    protected $fillable = ['user_id', 'user_group_id', 'transaction_currency_id', 'amount', 'start_date', 'end_date', 'start_date_tz', 'end_date_tz', 'native_amount'];
 
     /**
      * Route binder. Converts the key in the URL to the specified object (or throw 404).
@@ -98,7 +63,7 @@ class AvailableBudget extends Model
     public static function routeBinder(string $value): self
     {
         if (auth()->check()) {
-            $availableBudgetId = (int)$value;
+            $availableBudgetId = (int) $value;
 
             /** @var User $user */
             $user              = auth()->user();
@@ -126,14 +91,30 @@ class AvailableBudget extends Model
     protected function amount(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (string)$value,
+            get: static fn ($value) => (string) $value,
         );
     }
 
     protected function transactionCurrencyId(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
+        );
+    }
+
+    protected function startDate(): Attribute
+    {
+        return Attribute::make(
+            get: fn (string $value) => Carbon::parse($value),
+            set: fn (Carbon $value) => $value->format('Y-m-d'),
+        );
+    }
+
+    protected function endDate(): Attribute
+    {
+        return Attribute::make(
+            get: fn (string $value) => Carbon::parse($value),
+            set: fn (Carbon $value) => $value->format('Y-m-d'),
         );
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * RecurrenceStoreRequest.php
  * Copyright (c) 2021 james@firefly-iii.org
@@ -120,10 +121,10 @@ class StoreRequest extends FormRequest
                 $current['moment'] = $repetition['moment'];
             }
             if (array_key_exists('skip', $repetition)) {
-                $current['skip'] = (int)$repetition['skip'];
+                $current['skip'] = (int) $repetition['skip'];
             }
             if (array_key_exists('weekend', $repetition)) {
-                $current['weekend'] = (int)$repetition['weekend'];
+                $current['weekend'] = (int) $repetition['weekend'];
             }
 
             $return[] = $current;

@@ -23,68 +23,17 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Carbon\Carbon;
-use Eloquent;
+use FireflyIII\Casts\SeparateTimezoneCaster;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use FireflyIII\Support\Models\ReturnsIntegerUserIdTrait;
 use FireflyIII\User;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Query\Builder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-/**
- * FireflyIII\Models\Tag
- *
- * @property int                             $id
- * @property null|Carbon                     $created_at
- * @property null|Carbon                     $updated_at
- * @property null|Carbon                     $deleted_at
- * @property int                             $user_id
- * @property string                          $tag
- * @property string                          $tagMode
- * @property null|Carbon                     $date
- * @property null|string                     $description
- * @property null|float                      $latitude
- * @property null|float                      $longitude
- * @property null|int                        $zoomLevel
- * @property Attachment[]|Collection         $attachments
- * @property null|int                        $attachments_count
- * @property Collection|Location[]           $locations
- * @property null|int                        $locations_count
- * @property Collection|TransactionJournal[] $transactionJournals
- * @property null|int                        $transaction_journals_count
- * @property User                            $user
- *
- * @method static \Illuminate\Database\Eloquent\Builder|Tag newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Tag newQuery()
- * @method static Builder|Tag                               onlyTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder|Tag query()
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereDate($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereDeletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereLatitude($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereLongitude($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereTag($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereTagMode($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereUserId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereZoomLevel($value)
- * @method static Builder|Tag                               withTrashed()
- * @method static Builder|Tag                               withoutTrashed()
- *
- * @property int $user_group_id
- *
- * @method static \Illuminate\Database\Eloquent\Builder|Tag whereUserGroupId($value)
- *
- * @mixin Eloquent
- */
 class Tag extends Model
 {
     use ReturnsIntegerIdTrait;
@@ -93,16 +42,18 @@ class Tag extends Model
 
     protected $casts
                         = [
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-            'deleted_at' => 'datetime',
-            'date'       => 'date',
-            'zoomLevel'  => 'int',
-            'latitude'   => 'float',
-            'longitude'  => 'float',
+            'created_at'                   => 'datetime',
+            'updated_at'                   => 'datetime',
+            'deleted_at'                   => 'datetime',
+            'date'                         => SeparateTimezoneCaster::class,
+            'zoomLevel'                    => 'int',
+            'latitude'                     => 'float',
+            'longitude'                    => 'float',
+            'user_id'                      => 'integer',
+            'user_group_id'                => 'integer',
         ];
 
-    protected $fillable = ['user_id', 'user_group_id', 'tag', 'date', 'description', 'tagMode'];
+    protected $fillable = ['user_id', 'user_group_id', 'tag', 'date', 'date_tz', 'description', 'tagMode'];
 
     protected $hidden   = ['zoomLevel', 'latitude', 'longitude'];
 
@@ -114,7 +65,7 @@ class Tag extends Model
     public static function routeBinder(string $value): self
     {
         if (auth()->check()) {
-            $tagId = (int)$value;
+            $tagId = (int) $value;
 
             /** @var User $user */
             $user  = auth()->user();

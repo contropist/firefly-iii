@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AccountController.php
  * Copyright (c) 2020 james@firefly-iii.org
@@ -25,13 +26,15 @@ namespace FireflyIII\Api\V1\Controllers\Autocomplete;
 
 use FireflyIII\Api\V1\Controllers\Controller;
 use FireflyIII\Api\V1\Requests\Autocomplete\AutocompleteRequest;
+use FireflyIII\Enums\AccountTypeEnum;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Models\Account;
-use FireflyIII\Models\AccountType;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
+use FireflyIII\Support\Facades\Steam;
 use FireflyIII\Support\Http\Api\AccountFilter;
 use FireflyIII\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class AccountController
@@ -39,6 +42,8 @@ use Illuminate\Http\JsonResponse;
 class AccountController extends Controller
 {
     use AccountFilter;
+    // this array only exists to test if the constructor will use it properly.
+    protected array $accepts = ['application/json', 'application/vnd.api+json'];
 
     /** @var array<int, string> */
     private array                      $balanceTypes;
@@ -60,7 +65,7 @@ class AccountController extends Controller
                 return $next($request);
             }
         );
-        $this->balanceTypes = [AccountType::ASSET, AccountType::LOAN, AccountType::DEBT, AccountType::MORTGAGE];
+        $this->balanceTypes = [AccountTypeEnum::ASSET->value, AccountTypeEnum::LOAN->value, AccountTypeEnum::DEBT->value, AccountTypeEnum::MORTGAGE->value];
     }
 
     /**
@@ -72,40 +77,50 @@ class AccountController extends Controller
      */
     public function accounts(AutocompleteRequest $request): JsonResponse
     {
-        $data            = $request->getData();
-        $types           = $data['types'];
-        $query           = $data['query'];
-        $date            = $data['date'] ?? today(config('app.timezone'));
-        $return          = [];
-        $result          = $this->repository->searchAccount((string)$query, $types, $this->parameters->get('limit'));
+        $data   = $request->getData();
+        $types  = $data['types'];
+        $query  = $data['query'];
+        $date   = $data['date'] ?? today(config('app.timezone'));
+        $return = [];
+        $result = $this->repository->searchAccount((string) $query, $types, $this->parameters->get('limit'));
 
-        // TODO this code is duplicated in the V2 Autocomplete controller, which means this code is due to be deprecated.
-        $defaultCurrency = app('amount')->getDefaultCurrency();
+        // set date to subday + end-of-day for account balance. so it is at $date 23:59:59
+        $date->subDay()->endOfDay();
 
         /** @var Account $account */
         foreach ($result as $account) {
             $nameWithBalance = $account->name;
-            $currency        = $this->repository->getAccountCurrency($account) ?? $defaultCurrency;
-
+            $currency        = $this->repository->getAccountCurrency($account) ?? $this->nativeCurrency;
+            $useCurrency     = $currency;
             if (in_array($account->accountType->type, $this->balanceTypes, true)) {
-                $balance         = app('steam')->balance($account, $date);
+                // this one is correct.
+                Log::debug(sprintf('accounts: Call finalAccountBalance with date/time "%s"', $date->toIso8601String()));
+                $balance         = Steam::finalAccountBalance($account, $date);
+                $key             = $this->convertToNative && $currency->id !== $this->nativeCurrency->id ? 'native_balance' : 'balance';
+                $useCurrency     = $this->convertToNative && $currency->id !== $this->nativeCurrency->id ? $this->nativeCurrency : $currency;
+                $amount          = $balance[$key] ?? '0';
                 $nameWithBalance = sprintf(
                     '%s (%s)',
                     $account->name,
-                    app('amount')->formatAnything($currency, $balance, false)
+                    app('amount')->formatAnything($useCurrency, $amount, false)
                 );
             }
 
             $return[]        = [
-                'id'                      => (string)$account->id,
-                'name'                    => $account->name,
-                'name_with_balance'       => $nameWithBalance,
-                'type'                    => $account->accountType->type,
-                'currency_id'             => (string)$currency->id,
-                'currency_name'           => $currency->name,
-                'currency_code'           => $currency->code,
-                'currency_symbol'         => $currency->symbol,
-                'currency_decimal_places' => $currency->decimal_places,
+                'id'                              => (string) $account->id,
+                'name'                            => $account->name,
+                'name_with_balance'               => $nameWithBalance,
+                'type'                            => $account->accountType->type,
+                'currency_id'                     => (string) $useCurrency->id,
+                'currency_name'                   => $useCurrency->name,
+                'currency_code'                   => $useCurrency->code,
+                'currency_symbol'                 => $useCurrency->symbol,
+                'currency_decimal_places'         => $useCurrency->decimal_places,
+                'account_currency_id'             => (string) $currency->id,
+                'account_currency_name'           => $currency->name,
+                'account_currency_code'           => $currency->code,
+                'account_currency_symbol'         => $currency->symbol,
+                'account_currency_decimal_places' => $currency->decimal_places,
             ];
         }
 
@@ -113,14 +128,14 @@ class AccountController extends Controller
         usort(
             $return,
             static function (array $left, array $right) {
-                $order = [AccountType::ASSET, AccountType::REVENUE, AccountType::EXPENSE];
-                $posA  = (int)array_search($left['type'], $order, true);
-                $posB  = (int)array_search($right['type'], $order, true);
+                $order = [AccountTypeEnum::ASSET->value, AccountTypeEnum::REVENUE->value, AccountTypeEnum::EXPENSE->value];
+                $posA  = (int) array_search($left['type'], $order, true);
+                $posB  = (int) array_search($right['type'], $order, true);
 
                 return $posA - $posB;
             }
         );
 
-        return response()->json($return);
+        return response()->api($return);
     }
 }

@@ -35,11 +35,11 @@ use Illuminate\Contracts\Validation\ValidationRule;
 class IsDateOrTime implements ValidationRule
 {
     /**
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function validate(string $attribute, mixed $value, \Closure $fail): void
     {
-        $value = (string)$value;
+        $value = (string) $value;
         if ('' === $value) {
             $fail('validation.date_or_time')->translate();
 
@@ -55,7 +55,7 @@ class IsDateOrTime implements ValidationRule
                 $fail('validation.date_or_time')->translate();
 
                 return;
-            } catch (InvalidFormatException $e) { // @phpstan-ignore-line
+            } catch (InvalidFormatException $e) {
                 app('log')->error(sprintf('"%s" is of an invalid format: %s', $value, $e->getMessage()));
 
                 $fail('validation.date_or_time')->translate();

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RenderPartialViews.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,10 +24,10 @@ declare(strict_types=1);
 
 namespace FireflyIII\Support\Http\Controllers;
 
+use FireflyIII\Enums\AccountTypeEnum;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Helpers\Report\PopupReportInterface;
 use FireflyIII\Models\Account;
-use FireflyIII\Models\AccountType;
 use FireflyIII\Models\Budget;
 use FireflyIII\Models\Rule;
 use FireflyIII\Models\RuleAction;
@@ -54,10 +55,10 @@ trait RenderPartialViews
 
         /** @var BudgetRepositoryInterface $budgetRepository */
         $budgetRepository = app(BudgetRepositoryInterface::class);
-        $budget           = $budgetRepository->find((int)$attributes['budgetId']);
+        $budget           = $budgetRepository->find((int) $attributes['budgetId']);
 
         $accountRepos     = app(AccountRepositoryInterface::class);
-        $account          = $accountRepos->find((int)$attributes['accountId']);
+        $account          = $accountRepos->find((int) $attributes['accountId']);
 
         if (null === $budget || null === $account) {
             throw new FireflyException('Could not render popup.report.balance-amount because budget or account is null.');
@@ -86,7 +87,7 @@ trait RenderPartialViews
     {
         /** @var BudgetRepositoryInterface $repository */
         $repository = app(BudgetRepositoryInterface::class);
-        $budgets    = $repository->getBudgets();
+        $budgets    = $repository->getActiveBudgets();
 
         try {
             $result = view('reports.options.budget', compact('budgets'))->render();
@@ -113,8 +114,9 @@ trait RenderPartialViews
         /** @var PopupReportInterface $popupHelper */
         $popupHelper      = app(PopupReportInterface::class);
 
-        $budget           = $budgetRepository->find((int)$attributes['budgetId']);
+        $budget           = $budgetRepository->find((int) $attributes['budgetId']);
         if (null === $budget) {
+            // transactions without a budget.
             $budget = new Budget();
         }
         $journals         = $popupHelper->byBudget($budget, $attributes);
@@ -143,7 +145,7 @@ trait RenderPartialViews
 
         /** @var CategoryRepositoryInterface $categoryRepository */
         $categoryRepository = app(CategoryRepositoryInterface::class);
-        $category           = $categoryRepository->find((int)$attributes['categoryId']);
+        $category           = $categoryRepository->find((int) $attributes['categoryId']);
         $journals           = $popupHelper->byCategory($category, $attributes);
 
         try {
@@ -190,8 +192,8 @@ trait RenderPartialViews
     {
         /** @var AccountRepositoryInterface $repository */
         $repository = app(AccountRepositoryInterface::class);
-        $expense    = $repository->getActiveAccountsByType([AccountType::EXPENSE, AccountType::LOAN, AccountType::DEBT, AccountType::MORTGAGE]);
-        $revenue    = $repository->getActiveAccountsByType([AccountType::REVENUE, AccountType::LOAN, AccountType::DEBT, AccountType::MORTGAGE]);
+        $expense    = $repository->getActiveAccountsByType([AccountTypeEnum::EXPENSE->value, AccountTypeEnum::LOAN->value, AccountTypeEnum::DEBT->value, AccountTypeEnum::MORTGAGE->value]);
+        $revenue    = $repository->getActiveAccountsByType([AccountTypeEnum::REVENUE->value, AccountTypeEnum::LOAN->value, AccountTypeEnum::DEBT->value, AccountTypeEnum::MORTGAGE->value]);
         $set        = [];
 
         /** @var Account $account */
@@ -236,7 +238,7 @@ trait RenderPartialViews
         /** @var PopupReportInterface $popupHelper */
         $popupHelper       = app(PopupReportInterface::class);
 
-        $account           = $accountRepository->find((int)$attributes['accountId']);
+        $account           = $accountRepository->find((int) $attributes['accountId']);
 
         if (null === $account) {
             return 'This is an unknown account. Apologies.';
@@ -307,7 +309,7 @@ trait RenderPartialViews
         $triggers        = [];
         foreach ($operators as $key => $operator) {
             if ('user_action' !== $key && false === $operator['alias']) {
-                $triggers[$key] = (string)trans(sprintf('firefly.rule_trigger_%s_choice', $key));
+                $triggers[$key] = (string) trans(sprintf('firefly.rule_trigger_%s_choice', $key));
             }
         }
         asort($triggers);
@@ -322,7 +324,7 @@ trait RenderPartialViews
                 $count = ($index + 1);
 
                 try {
-                    $rootOperator      = OperatorQuerySearch::getRootOperator((string)$entry->trigger_type);
+                    $rootOperator      = OperatorQuerySearch::getRootOperator((string) $entry->trigger_type);
                     if (str_starts_with($rootOperator, '-')) {
                         $rootOperator = substr($rootOperator, 1);
                     }
@@ -332,7 +334,7 @@ trait RenderPartialViews
                             'oldTrigger'    => $rootOperator,
                             'oldValue'      => $entry->trigger_value,
                             'oldChecked'    => $entry->stop_processing,
-                            'oldProhibited' => str_starts_with((string)$entry->trigger_type, '-'),
+                            'oldProhibited' => str_starts_with((string) $entry->trigger_type, '-'),
                             'count'         => $count,
                             'triggers'      => $triggers,
                         ]
@@ -363,7 +365,7 @@ trait RenderPartialViews
 
         /** @var PopupReportInterface $popupHelper */
         $popupHelper       = app(PopupReportInterface::class);
-        $account           = $accountRepository->find((int)$attributes['accountId']);
+        $account           = $accountRepository->find((int) $attributes['accountId']);
 
         if (null === $account) {
             return 'This is an unknown category. Apologies.';

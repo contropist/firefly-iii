@@ -1,4 +1,5 @@
 <?php
+
 /**
  * InterestingMessage.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -25,10 +26,13 @@ namespace FireflyIII\Http\Middleware;
 
 use FireflyIII\Models\Account;
 use FireflyIII\Models\Bill;
+use FireflyIII\Models\GroupMembership;
 use FireflyIII\Models\TransactionCurrency;
 use FireflyIII\Models\TransactionGroup;
 use FireflyIII\Models\TransactionJournal;
+use FireflyIII\Models\UserGroup;
 use FireflyIII\Models\Webhook;
+use FireflyIII\User;
 use Illuminate\Http\Request;
 
 /**
@@ -50,6 +54,10 @@ class InterestingMessage
         if ($this->groupMessage($request)) {
             app('preferences')->mark();
             $this->handleGroupMessage($request);
+        }
+        if ($this->userGroupMessage($request)) {
+            app('preferences')->mark();
+            $this->handleUserGroupMessage($request);
         }
         if ($this->accountMessage($request)) {
             app('preferences')->mark();
@@ -86,6 +94,15 @@ class InterestingMessage
         return null !== $transactionGroupId && null !== $message;
     }
 
+    private function userGroupMessage(Request $request): bool
+    {
+        // get parameters from request.
+        $transactionGroupId = $request->get('user_group_id');
+        $message            = $request->get('message');
+
+        return null !== $transactionGroupId && null !== $message;
+    }
+
     private function handleGroupMessage(Request $request): void
     {
         // get parameters from request.
@@ -94,7 +111,7 @@ class InterestingMessage
 
         // send message about newly created transaction group.
         /** @var null|TransactionGroup $group */
-        $group              = auth()->user()->transactionGroups()->with(['transactionJournals', 'transactionJournals.transactionType'])->find((int)$transactionGroupId);
+        $group              = auth()->user()->transactionGroups()->with(['transactionJournals', 'transactionJournals.transactionType'])->find((int) $transactionGroupId);
 
         if (null === $group) {
             return;
@@ -110,17 +127,17 @@ class InterestingMessage
         $title              = $count > 1 ? $group->title : $journal->description;
         if ('created' === $message) {
             session()->flash('success_url', route('transactions.show', [$transactionGroupId]));
-            session()->flash('success', (string)trans('firefly.stored_journal', ['description' => $title]));
+            session()->flash('success', (string) trans('firefly.stored_journal', ['description' => $title]));
         }
         if ('updated' === $message) {
             $type = strtolower($journal->transactionType->type);
             session()->flash('success_url', route('transactions.show', [$transactionGroupId]));
-            session()->flash('success', (string)trans(sprintf('firefly.updated_%s', $type), ['description' => $title]));
+            session()->flash('success', (string) trans(sprintf('firefly.updated_%s', $type), ['description' => $title]));
         }
         if ('no_change' === $message) {
             $type = strtolower($journal->transactionType->type);
             session()->flash('warning_url', route('transactions.show', [$transactionGroupId]));
-            session()->flash('warning', (string)trans(sprintf('firefly.no_changes_%s', $type), ['description' => $title]));
+            session()->flash('warning', (string) trans(sprintf('firefly.no_changes_%s', $type), ['description' => $title]));
         }
     }
 
@@ -133,26 +150,67 @@ class InterestingMessage
         return null !== $accountId && null !== $message;
     }
 
+    private function handleUserGroupMessage(Request $request): void
+    {
+        // get parameters from request.
+        $userGroupId = $request->get('user_group_id');
+        $message     = $request->get('message');
+
+        /** @var User $user */
+        $user        = auth()->user();
+
+        /** @var null|UserGroup $userGroup */
+        $userGroup   = UserGroup::find($userGroupId);
+        $valid       = false;
+        $memberships = $user->groupMemberships()->get();
+
+        /** @var GroupMembership $membership */
+        foreach ($memberships as $membership) {
+            if ($membership->userGroup->id === $userGroup->id) {
+                $valid = true;
+
+                break;
+            }
+        }
+        if (false === $valid) {
+            return;
+        }
+
+
+        if ('deleted' === $message) {
+            session()->flash('success', (string) trans('firefly.flash_administration_deleted', ['title' => $userGroup->title]));
+        }
+        if ('created' === $message) {
+            session()->flash('success', (string) trans('firefly.flash_administration_created', ['title' => $userGroup->title]));
+        }
+        if ('updated' === $message) {
+            session()->flash('success', (string) trans('firefly.flash_administration_updated', ['title' => $userGroup->title]));
+        }
+    }
+
     private function handleAccountMessage(Request $request): void
     {
         // get parameters from request.
         $accountId = $request->get('account_id');
         $message   = $request->get('message');
 
+        /** @var User $user */
+        $user      = auth()->user();
+
         /** @var null|Account $account */
-        $account   = auth()->user()->accounts()->withTrashed()->find($accountId);
+        $account   = $user->accounts()->withTrashed()->find($accountId);
 
         if (null === $account) {
             return;
         }
         if ('deleted' === $message) {
-            session()->flash('success', (string)trans('firefly.account_deleted', ['name' => $account->name]));
+            session()->flash('success', (string) trans('firefly.account_deleted', ['name' => $account->name]));
         }
         if ('created' === $message) {
-            session()->flash('success', (string)trans('firefly.stored_new_account', ['name' => $account->name]));
+            session()->flash('success', (string) trans('firefly.stored_new_account', ['name' => $account->name]));
         }
         if ('updated' === $message) {
-            session()->flash('success', (string)trans('firefly.updated_account', ['name' => $account->name]));
+            session()->flash('success', (string) trans('firefly.updated_account', ['name' => $account->name]));
         }
     }
 
@@ -178,10 +236,10 @@ class InterestingMessage
             return;
         }
         if ('deleted' === $message) {
-            session()->flash('success', (string)trans('firefly.deleted_bill', ['name' => $bill->name]));
+            session()->flash('success', (string) trans('firefly.deleted_bill', ['name' => $bill->name]));
         }
         if ('created' === $message) {
-            session()->flash('success', (string)trans('firefly.stored_new_bill', ['name' => $bill->name]));
+            session()->flash('success', (string) trans('firefly.stored_new_bill', ['name' => $bill->name]));
         }
     }
 
@@ -207,13 +265,13 @@ class InterestingMessage
             return;
         }
         if ('deleted' === $message) {
-            session()->flash('success', (string)trans('firefly.deleted_webhook', ['title' => $webhook->title]));
+            session()->flash('success', (string) trans('firefly.deleted_webhook', ['title' => $webhook->title]));
         }
         if ('updated' === $message) {
-            session()->flash('success', (string)trans('firefly.updated_webhook', ['title' => $webhook->title]));
+            session()->flash('success', (string) trans('firefly.updated_webhook', ['title' => $webhook->title]));
         }
         if ('created' === $message) {
-            session()->flash('success', (string)trans('firefly.stored_new_webhook', ['title' => $webhook->title]));
+            session()->flash('success', (string) trans('firefly.stored_new_webhook', ['title' => $webhook->title]));
         }
     }
 
@@ -240,22 +298,22 @@ class InterestingMessage
             return;
         }
         if ('enabled' === $message) {
-            session()->flash('success', (string)trans('firefly.currency_is_now_enabled', ['name' => $currency->name]));
+            session()->flash('success', (string) trans('firefly.currency_is_now_enabled', ['name' => $currency->name]));
         }
         if ('enable_failed' === $message) {
-            session()->flash('error', (string)trans('firefly.could_not_enable_currency', ['name' => $currency->name]));
+            session()->flash('error', (string) trans('firefly.could_not_enable_currency', ['name' => $currency->name]));
         }
         if ('disabled' === $message) {
-            session()->flash('success', (string)trans('firefly.currency_is_now_disabled', ['name' => $currency->name]));
+            session()->flash('success', (string) trans('firefly.currency_is_now_disabled', ['name' => $currency->name]));
         }
         if ('disable_failed' === $message) {
-            session()->flash('error', (string)trans('firefly.could_not_disable_currency', ['name' => $currency->name]));
+            session()->flash('error', (string) trans('firefly.could_not_disable_currency', ['name' => $currency->name]));
         }
         if ('default' === $message) {
-            session()->flash('success', (string)trans('firefly.new_default_currency', ['name' => $currency->name]));
+            session()->flash('success', (string) trans('firefly.new_default_currency', ['name' => $currency->name]));
         }
         if ('default_failed' === $message) {
-            session()->flash('error', (string)trans('firefly.default_currency_failed', ['name' => $currency->name]));
+            session()->flash('error', (string) trans('firefly.default_currency_failed', ['name' => $currency->name]));
         }
     }
 }

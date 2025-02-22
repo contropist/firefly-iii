@@ -93,7 +93,7 @@ class Navigation
             return $this->calculator->nextDateByInterval($epoch, $periodicity, $skipInterval);
         } catch (IntervalException $exception) {
             Log::warning($exception->getMessage(), ['exception' => $exception]);
-        } catch (\Throwable $exception) { // @phpstan-ignore-line
+        } catch (\Throwable $exception) {
             Log::error($exception->getMessage(), ['exception' => $exception]);
         }
 
@@ -161,7 +161,7 @@ class Navigation
     public function startOfPeriod(Carbon $theDate, string $repeatFreq): Carbon
     {
         $date         = clone $theDate;
-        Log::debug(sprintf('Now in startOfPeriod("%s", "%s")', $date->toIso8601String(), $repeatFreq));
+        // Log::debug(sprintf('Now in startOfPeriod("%s", "%s")', $date->toIso8601String(), $repeatFreq));
         $functionMap  = [
             '1D'        => 'startOfDay',
             'daily'     => 'startOfDay',
@@ -177,6 +177,7 @@ class Navigation
             'year'      => 'startOfYear',
             'yearly'    => 'startOfYear',
             '1Y'        => 'startOfYear',
+            'MTD'       => 'startOfMonth',
         ];
 
         $parameterMap = [
@@ -185,25 +186,25 @@ class Navigation
 
         if (array_key_exists($repeatFreq, $functionMap)) {
             $function = $functionMap[$repeatFreq];
-            Log::debug(sprintf('Function is ->%s()', $function));
+            //            Log::debug(sprintf('Function is ->%s()', $function));
             if (array_key_exists($function, $parameterMap)) {
-                Log::debug(sprintf('Parameter map, function becomes ->%s(%s)', $function, implode(', ', $parameterMap[$function])));
+                //                Log::debug(sprintf('Parameter map, function becomes ->%s(%s)', $function, implode(', ', $parameterMap[$function])));
                 $date->{$function}($parameterMap[$function][0]); // @phpstan-ignore-line
-                Log::debug(sprintf('Result is "%s"', $date->toIso8601String()));
+                //                Log::debug(sprintf('Result is "%s"', $date->toIso8601String()));
 
                 return $date;
             }
 
             $date->{$function}(); // @phpstan-ignore-line
-            Log::debug(sprintf('Result is "%s"', $date->toIso8601String()));
+            //            Log::debug(sprintf('Result is "%s"', $date->toIso8601String()));
 
             return $date;
         }
         if ('half-year' === $repeatFreq || '6M' === $repeatFreq) {
             $skipTo = $date->month > 7 ? 6 : 0;
             $date->startOfYear()->addMonths($skipTo);
-            Log::debug(sprintf('Custom call for "%s": addMonths(%d)', $repeatFreq, $skipTo));
-            Log::debug(sprintf('Result is "%s"', $date->toIso8601String()));
+            //            Log::debug(sprintf('Custom call for "%s": addMonths(%d)', $repeatFreq, $skipTo));
+            //            Log::debug(sprintf('Result is "%s"', $date->toIso8601String()));
 
             return $date;
         }
@@ -219,13 +220,13 @@ class Navigation
             default   => null,
         };
         if (null !== $result) {
-            Log::debug(sprintf('Result is "%s"', $date->toIso8601String()));
+            //            Log::debug(sprintf('Result is "%s"', $date->toIso8601String()));
 
             return $result;
         }
 
         if ('custom' === $repeatFreq) {
-            Log::debug(sprintf('Custom, result is "%s"', $date->toIso8601String()));
+            //            Log::debug(sprintf('Custom, result is "%s"', $date->toIso8601String()));
 
             return $date; // the date is already at the start.
         }
@@ -237,7 +238,7 @@ class Navigation
     public function endOfPeriod(Carbon $end, string $repeatFreq): Carbon
     {
         $currentEnd  = clone $end;
-        Log::debug(sprintf('Now in endOfPeriod("%s", "%s").', $currentEnd->toIso8601String(), $repeatFreq));
+        // Log::debug(sprintf('Now in endOfPeriod("%s", "%s").', $currentEnd->toIso8601String(), $repeatFreq));
 
         $functionMap = [
             '1D'        => 'endOfDay',
@@ -274,12 +275,20 @@ class Navigation
 
                 /** @var Carbon $tEnd */
                 $tEnd       = session('end', today(config('app.timezone'))->endOfMonth());
-                $diffInDays = (int)$tStart->diffInDays($tEnd, true);
+                $diffInDays = (int) $tStart->diffInDays($tEnd, true);
             }
             Log::debug(sprintf('Diff in days is %d', $diffInDays));
             $currentEnd->addDays($diffInDays);
 
             return $currentEnd;
+        }
+        if ('MTD' === $repeatFreq) {
+            $today = today();
+            if ($today->isSameMonth($end)) {
+                return $today->endOfDay();
+            }
+
+            return $end->endOfMonth();
         }
 
         $result      = match ($repeatFreq) {
@@ -318,7 +327,7 @@ class Navigation
         if (in_array($repeatFreq, $subDay, true)) {
             $currentEnd->subDay();
         }
-        Log::debug(sprintf('Final result: %s', $currentEnd->toIso8601String()));
+        //        Log::debug(sprintf('Final result: %s', $currentEnd->toIso8601String()));
 
         return $currentEnd;
     }
@@ -327,7 +336,7 @@ class Navigation
     {
         $endOfMonth = $date->copy()->endOfMonth();
 
-        return (int)$date->diffInDays($endOfMonth, true);
+        return (int) $date->diffInDays($endOfMonth, true);
     }
 
     public function diffInPeriods(string $period, int $skip, Carbon $beginning, Carbon $end): int
@@ -382,7 +391,7 @@ class Navigation
             ));
         }
 
-        return (int)$diff;
+        return (int) $diff;
     }
 
     public function endOfX(Carbon $theCurrentEnd, string $repeatFreq, ?Carbon $maxDate): Carbon
@@ -424,11 +433,11 @@ class Navigation
      */
     public function getViewRange(bool $correct): string
     {
-        $range = app('preferences')->get('viewRange', '1M')?->data ?? '1M';
+        $range = app('preferences')->get('viewRange', '1M')->data ?? '1M';
         if (is_array($range)) {
             $range = '1M';
         }
-        $range = (string)$range;
+        $range = (string) $range;
         if (!$correct) {
             return $range;
         }
@@ -463,18 +472,18 @@ class Navigation
         // define period to increment
         $increment     = 'addDay';
         $format        = $this->preferredCarbonFormat($start, $end);
-        $displayFormat = (string)trans('config.month_and_day_js', [], $locale);
+        $displayFormat = (string) trans('config.month_and_day_js', [], $locale);
         $diff          = $start->diffInMonths($end, true);
         // increment by month (for year)
         if ($diff >= 1.0001) {
             $increment     = 'addMonth';
-            $displayFormat = (string)trans('config.month_js');
+            $displayFormat = (string) trans('config.month_js');
         }
 
         // increment by year (for multi-year)
         if ($diff >= 12.0001) {
             $increment     = 'addYear';
-            $displayFormat = (string)trans('config.year_js');
+            $displayFormat = (string) trans('config.year_js');
         }
         $begin         = clone $start;
         $entries       = [];
@@ -496,14 +505,14 @@ class Navigation
     {
         $format = 'Y-m-d';
         $diff   = $start->diffInMonths($end, true);
-        Log::debug(sprintf('preferredCarbonFormat(%s, %s) = %f', $start->format('Y-m-d'), $end->format('Y-m-d'), $diff));
+        // Log::debug(sprintf('preferredCarbonFormat(%s, %s) = %f', $start->format('Y-m-d'), $end->format('Y-m-d'), $diff));
         if ($diff >= 1.001) {
-            Log::debug(sprintf('Return Y-m because %s', $diff));
+            //            Log::debug(sprintf('Return Y-m because %s', $diff));
             $format = 'Y-m';
         }
 
         if ($diff >= 12.001) {
-            Log::debug(sprintf('Return Y because %s', $diff));
+            //            Log::debug(sprintf('Return Y because %s', $diff));
             $format = 'Y';
         }
 
@@ -514,19 +523,19 @@ class Navigation
     {
         $date      = clone $theDate;
         $formatMap = [
-            '1D'      => (string)trans('config.specific_day_js'),
-            'daily'   => (string)trans('config.specific_day_js'),
-            'custom'  => (string)trans('config.specific_day_js'),
-            '1W'      => (string)trans('config.week_in_year_js'),
-            'week'    => (string)trans('config.week_in_year_js'),
-            'weekly'  => (string)trans('config.week_in_year_js'),
-            '1M'      => (string)trans('config.month_js'),
-            'month'   => (string)trans('config.month_js'),
-            'monthly' => (string)trans('config.month_js'),
-            '1Y'      => (string)trans('config.year_js'),
-            'year'    => (string)trans('config.year_js'),
-            'yearly'  => (string)trans('config.year_js'),
-            '6M'      => (string)trans('config.half_year_js'),
+            '1D'      => (string) trans('config.specific_day_js'),
+            'daily'   => (string) trans('config.specific_day_js'),
+            'custom'  => (string) trans('config.specific_day_js'),
+            '1W'      => (string) trans('config.week_in_year_js'),
+            'week'    => (string) trans('config.week_in_year_js'),
+            'weekly'  => (string) trans('config.week_in_year_js'),
+            '1M'      => (string) trans('config.month_js'),
+            'month'   => (string) trans('config.month_js'),
+            'monthly' => (string) trans('config.month_js'),
+            '1Y'      => (string) trans('config.year_js'),
+            'year'    => (string) trans('config.year_js'),
+            'yearly'  => (string) trans('config.year_js'),
+            '6M'      => (string) trans('config.half_year_js'),
         ];
 
         if (array_key_exists($repeatFrequency, $formatMap)) {
@@ -567,13 +576,13 @@ class Navigation
     public function preferredCarbonLocalizedFormat(Carbon $start, Carbon $end): string
     {
         $locale = app('steam')->getLocale();
-        $format = (string)trans('config.month_and_day_js', [], $locale);
+        $format = (string) trans('config.month_and_day_js', [], $locale);
         if ($start->diffInMonths($end, true) > 1) {
-            $format = (string)trans('config.month_js', [], $locale);
+            $format = (string) trans('config.month_js', [], $locale);
         }
 
         if ($start->diffInMonths($end, true) > 12) {
-            $format = (string)trans('config.year_js', [], $locale);
+            $format = (string) trans('config.year_js', [], $locale);
         }
 
         return $format;
@@ -586,11 +595,11 @@ class Navigation
     public function preferredEndOfPeriod(Carbon $start, Carbon $end): string
     {
         $format = 'endOfDay';
-        if ((int)$start->diffInMonths($end, true) > 1) {
+        if ((int) $start->diffInMonths($end, true) > 1) {
             $format = 'endOfMonth';
         }
 
-        if ((int)$start->diffInMonths($end, true) > 12) {
+        if ((int) $start->diffInMonths($end, true) > 12) {
             $format = 'endOfYear';
         }
 
@@ -604,11 +613,11 @@ class Navigation
     public function preferredRangeFormat(Carbon $start, Carbon $end): string
     {
         $format = '1D';
-        if ((int)$start->diffInMonths($end, true) > 1) {
+        if ((int) $start->diffInMonths($end, true) > 1) {
             $format = '1M';
         }
 
-        if ((int)$start->diffInMonths($end, true) > 12) {
+        if ((int) $start->diffInMonths($end, true) > 12) {
             $format = '1Y';
         }
 
@@ -622,11 +631,11 @@ class Navigation
     public function preferredSqlFormat(Carbon $start, Carbon $end): string
     {
         $format = '%Y-%m-%d';
-        if ((int)$start->diffInMonths($end, true) > 1) {
+        if ((int) $start->diffInMonths($end, true) > 1) {
             $format = '%Y-%m';
         }
 
-        if ((int)$start->diffInMonths($end, true) > 12) {
+        if ((int) $start->diffInMonths($end, true) > 12) {
             $format = '%Y';
         }
 
@@ -682,7 +691,7 @@ class Navigation
 
             /** @var Carbon $tEnd */
             $tEnd       = session('end', today(config('app.timezone'))->endOfMonth());
-            $diffInDays = (int)$tStart->diffInDays($tEnd, true);
+            $diffInDays = (int) $tStart->diffInDays($tEnd, true);
             $date->subDays($diffInDays * $subtract);
 
             return $date;
@@ -750,6 +759,8 @@ class Navigation
             $function = $functionMap[$range];
             $end->{$function}(); // @phpstan-ignore-line
 
+            Log::debug(sprintf('updateEndDate returns "%s"', $end->format('Y-m-d')));
+
             return $end;
         }
         if ('6M' === $range) {
@@ -806,6 +817,7 @@ class Navigation
         if (array_key_exists($range, $functionMap)) {
             $function = $functionMap[$range];
             $start->{$function}(); // @phpstan-ignore-line
+            Log::debug(sprintf('updateStartDate returns "%s"', $start->format('Y-m-d')));
 
             return $start;
         }

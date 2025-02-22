@@ -1,4 +1,5 @@
 <?php
+
 /*
  * WebhookRepository.php
  * Copyright (c) 2021 james@firefly-iii.org
@@ -77,7 +78,7 @@ class WebhookRepository implements WebhookRepositoryInterface
             ->where('webhook_messages.errored', 0)
             ->get(['webhook_messages.*'])
             ->filter(
-                static function (WebhookMessage $message) {
+                static function (WebhookMessage $message) { // @phpstan-ignore-line
                     return $message->webhookAttempts()->count() <= 2;
                 }
             )->splice(0, 3)

@@ -63,7 +63,7 @@ class MailError extends Job implements ShouldQueue
      */
     public function handle(): void
     {
-        $email            = (string)config('firefly.site_owner');
+        $email            = (string) config('firefly.site_owner');
         $args             = $this->exception;
         $args['loggedIn'] = $this->userData['id'] > 0;
         $args['user']     = $this->userData;
@@ -84,11 +84,11 @@ class MailError extends Job implements ShouldQueue
                     $args,
                     static function (Message $message) use ($email): void {
                         if ('mail@example.com' !== $email) {
-                            $message->to($email, $email)->subject((string)trans('email.error_subject'));
+                            $message->to($email, $email)->subject((string) trans('email.error_subject'));
                         }
                     }
                 );
-            } catch (\Exception|TransportException $e) { // @phpstan-ignore-line
+            } catch (\Exception|TransportException $e) {
                 $message = $e->getMessage();
                 if (str_contains($message, 'Bcc')) {
                     app('log')->warning('[Bcc] Could not email or log the error. Please validate your email settings, use the .env.example file as a guide.');
@@ -130,12 +130,12 @@ class MailError extends Job implements ShouldQueue
         }
         if (file_exists($file)) {
             Log::debug(sprintf('Read file in "%s"', $file));
-            $limits = json_decode(file_get_contents($file), true);
+            $limits = json_decode((string) file_get_contents($file), true);
         }
         // limit reached?
         foreach ($types as $type => $info) {
             Log::debug(sprintf('Now checking limit "%s"', $type), $info);
-            if (!isset($limits[$type])) {
+            if (!array_key_exists($type, $limits)) {
                 Log::debug(sprintf('Limit "%s" reset to zero, did not exist yet.', $type));
                 $limits[$type] = [
                     'time' => time(),

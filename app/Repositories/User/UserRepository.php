@@ -201,7 +201,7 @@ class UserRepository implements UserRepositoryInterface
         // two factor:
         $return['has_2fa']             = null !== $user->mfa_secret;
         $return['is_admin']            = $this->hasRole($user, 'owner');
-        $return['blocked']             = 1 === (int)$user->blocked;
+        $return['blocked']             = 1 === (int) $user->blocked;
         $return['blocked_code']        = $user->blocked_code;
         $return['accounts']            = $user->accounts()->count();
         $return['journals']            = $user->transactionJournals()->count();
@@ -268,6 +268,9 @@ class UserRepository implements UserRepositoryInterface
 
     public function inviteUser(null|Authenticatable|User $user, string $email): InvitedUser
     {
+        if (!$user instanceof User) {
+            throw new FireflyException('User is not a User object.');
+        }
         $now                  = today(config('app.timezone'));
         $now->addDays(2);
         $invitee              = new InvitedUser();
@@ -276,6 +279,7 @@ class UserRepository implements UserRepositoryInterface
         $invitee->email       = $email;
         $invitee->redeemed    = false;
         $invitee->expires     = $now;
+        $invitee->expires_tz  = $now->format('e');
         $invitee->save();
 
         return $invitee;

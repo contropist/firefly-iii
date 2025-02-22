@@ -25,9 +25,12 @@ namespace FireflyIII\Http\Controllers\Auth;
 
 use Cookie;
 use FireflyIII\Events\ActuallyLoggedIn;
+use FireflyIII\Events\Security\UnknownUserAttemptedLogin;
+use FireflyIII\Events\Security\UserAttemptedLogin;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Http\Controllers\Controller;
 use FireflyIII\Providers\RouteServiceProvider;
+use FireflyIII\Repositories\User\UserRepositoryInterface;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -38,6 +41,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Redirector;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
@@ -56,7 +60,8 @@ class LoginController extends Controller
     /**
      * Where to redirect users after login.
      */
-    protected string $redirectTo = RouteServiceProvider::HOME;
+    protected string                $redirectTo = RouteServiceProvider::HOME;
+    private UserRepositoryInterface $repository;
 
     private string $username;
 
@@ -66,8 +71,9 @@ class LoginController extends Controller
     public function __construct()
     {
         parent::__construct();
-        $this->username = 'email';
+        $this->username   = 'email';
         $this->middleware('guest')->except('logout');
+        $this->repository = app(UserRepositoryInterface::class);
     }
 
     /**
@@ -77,12 +83,16 @@ class LoginController extends Controller
      */
     public function login(Request $request): JsonResponse|RedirectResponse
     {
-        Log::channel('audit')->info(sprintf('User is trying to login using "%s"', $request->get($this->username())));
+        $username = $request->get($this->username());
+        Log::channel('audit')->info(sprintf('User is trying to login using "%s"', $username));
         app('log')->debug('User is trying to login.');
 
         try {
             $this->validateLogin($request);
         } catch (ValidationException $e) {
+            // basic validation exception.
+            // report the failed login to the user if the count is 2 or 5.
+            // TODO here be warning.
             return redirect(route('login'))
                 ->withErrors(
                     [
@@ -118,10 +128,19 @@ class LoginController extends Controller
             return $this->sendLoginResponse($request);
         }
         app('log')->warning('Login attempt failed.');
+        $username = (string) $request->get($this->username());
+        $user     = $this->repository->findByEmail($username);
+        if (null === $user) {
+            // send event to owner.
+            event(new UnknownUserAttemptedLogin($username));
+        }
+        if (null !== $user) {
+            event(new UserAttemptedLogin($user));
+        }
 
         // Copied directly from AuthenticatesUsers, but with logging added:
         // If the login attempt was unsuccessful we will increment the number of attempts
-        // to login and redirect the user back to the login form. Of course, when this
+        // to log in and redirect the user back to the login form. Of course, when this
         // user surpasses their maximum number of attempts they will get locked out.
         $this->incrementLoginAttempts($request);
         Log::channel('audit')->warning(sprintf('Login failed. Attempt for user "%s" failed.', $request->get($this->username())));
@@ -145,7 +164,7 @@ class LoginController extends Controller
     /**
      * Get the failed login response instance.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      *
      * @throws ValidationException
      */
@@ -205,9 +224,9 @@ class LoginController extends Controller
     {
         Log::channel('audit')->info('Show login form (1.1).');
 
-        $count             = \DB::table('users')->count();
+        $count             = DB::table('users')->count();
         $guard             = config('auth.defaults.guard');
-        $title             = (string)trans('firefly.login_page_title');
+        $title             = (string) trans('firefly.login_page_title');
 
         if (0 === $count && 'web' === $guard) {
             return redirect(route('register'));
@@ -233,7 +252,7 @@ class LoginController extends Controller
         $storeInCookie     = config('google2fa.store_in_cookie', false);
         if (false !== $storeInCookie) {
             $cookieName = config('google2fa.cookie_name', 'google2fa_token');
-            request()->cookies->set($cookieName, 'invalid');
+            \Cookie::queue(\Cookie::make($cookieName, 'invalid-'.time()));
         }
         $usernameField     = $this->username();
 

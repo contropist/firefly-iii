@@ -1,4 +1,5 @@
 <?php
+
 /**
  * FormSupport.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -33,23 +34,21 @@ use Illuminate\Support\MessageBag;
  */
 trait FormSupport
 {
-    /**
-     * @param mixed $selected
-     */
-    public function select(string $name, ?array $list = null, $selected = null, ?array $options = null): string
+    public function multiSelect(string $name, ?array $list = null, mixed $selected = null, ?array $options = null): string
     {
         $list ??= [];
         $label    = $this->label($name, $options);
         $options  = $this->expandOptionArray($name, $label, $options);
         $classes  = $this->getHolderClasses($name);
         $selected = $this->fillFieldValue($name, $selected);
+
         unset($options['autocomplete'], $options['placeholder']);
 
         try {
-            $html = view('form.select', compact('classes', 'name', 'label', 'selected', 'options', 'list'))->render();
+            $html = view('form.multi-select', compact('classes', 'name', 'label', 'selected', 'options', 'list'))->render();
         } catch (\Throwable $e) {
-            app('log')->debug(sprintf('Could not render select(): %s', $e->getMessage()));
-            $html = 'Could not render select.';
+            app('log')->debug(sprintf('Could not render multi-select(): %s', $e->getMessage()));
+            $html = 'Could not render multi-select.';
         }
 
         return $html;
@@ -63,7 +62,7 @@ trait FormSupport
         }
         $name = str_replace('[]', '', $name);
 
-        return (string)trans('form.'.$name);
+        return (string) trans('form.'.$name);
     }
 
     /**
@@ -116,6 +115,28 @@ trait FormSupport
         }
 
         return $value;
+    }
+
+    /**
+     * @param mixed $selected
+     */
+    public function select(string $name, ?array $list = null, $selected = null, ?array $options = null): string
+    {
+        $list ??= [];
+        $label    = $this->label($name, $options);
+        $options  = $this->expandOptionArray($name, $label, $options);
+        $classes  = $this->getHolderClasses($name);
+        $selected = $this->fillFieldValue($name, $selected);
+        unset($options['autocomplete'], $options['placeholder']);
+
+        try {
+            $html = view('form.select', compact('classes', 'name', 'label', 'selected', 'options', 'list'))->render();
+        } catch (\Throwable $e) {
+            app('log')->debug(sprintf('Could not render select(): %s', $e->getMessage()));
+            $html = 'Could not render select.';
+        }
+
+        return $html;
     }
 
     protected function getAccountRepository(): AccountRepositoryInterface

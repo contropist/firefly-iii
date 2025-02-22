@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RecurrenceTransactionMeta.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,43 +24,12 @@ declare(strict_types=1);
 
 namespace FireflyIII\Models;
 
-use Carbon\Carbon;
-use Eloquent;
 use FireflyIII\Support\Models\ReturnsIntegerIdTrait;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Query\Builder;
 
-/**
- * FireflyIII\Models\RecurrenceTransactionMeta
- *
- * @property int                   $id
- * @property null|Carbon           $created_at
- * @property null|Carbon           $updated_at
- * @property null|Carbon           $deleted_at
- * @property int|string            $rt_id
- * @property string                $name
- * @property mixed                 $value
- * @property RecurrenceTransaction $recurrenceTransaction
- *
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransactionMeta newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransactionMeta newQuery()
- * @method static Builder|RecurrenceTransactionMeta                               onlyTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransactionMeta query()
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransactionMeta whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransactionMeta whereDeletedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransactionMeta whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransactionMeta whereName($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransactionMeta whereRtId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransactionMeta whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|RecurrenceTransactionMeta whereValue($value)
- * @method static Builder|RecurrenceTransactionMeta                               withTrashed()
- * @method static Builder|RecurrenceTransactionMeta                               withoutTrashed()
- *
- * @mixin Eloquent
- */
 class RecurrenceTransactionMeta extends Model
 {
     use ReturnsIntegerIdTrait;
@@ -76,7 +46,6 @@ class RecurrenceTransactionMeta extends Model
 
     protected $fillable = ['rt_id', 'name', 'value'];
 
-    /** @var string The table to store the data in */
     protected $table    = 'rt_meta';
 
     public function recurrenceTransaction(): BelongsTo
@@ -87,7 +56,7 @@ class RecurrenceTransactionMeta extends Model
     protected function rtId(): Attribute
     {
         return Attribute::make(
-            get: static fn ($value) => (int)$value,
+            get: static fn ($value) => (int) $value,
         );
     }
 }

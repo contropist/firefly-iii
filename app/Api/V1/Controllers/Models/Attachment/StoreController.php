@@ -1,4 +1,5 @@
 <?php
+
 /*
  * StoreController.php
  * Copyright (c) 2021 james@firefly-iii.org
@@ -112,7 +113,12 @@ class StoreController extends Controller
 
             return response()->json([], 422);
         }
-        $helper->saveAttachmentFromApi($attachment, $body);
+        $result = $helper->saveAttachmentFromApi($attachment, $body);
+        if (false === $result) {
+            app('log')->error('Could not save attachment from API.');
+
+            return response()->json([], 422);
+        }
 
         return response()->json([], 204);
     }

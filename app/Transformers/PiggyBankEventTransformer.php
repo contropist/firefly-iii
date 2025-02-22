@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PiggyBankEventTransformer.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -53,34 +54,34 @@ class PiggyBankEventTransformer extends AbstractTransformer
     public function transform(PiggyBankEvent $event): array
     {
         // get account linked to piggy bank
-        $account   = $event->piggyBank->account;
+        $account   = $event->piggyBank->accounts()->first();
 
         // set up repositories.
         $this->repository->setUser($account->user);
         $this->piggyRepos->setUser($account->user);
 
         // get associated currency or fall back to the default:
-        $currency  = $this->repository->getAccountCurrency($account) ?? app('amount')->getDefaultCurrencyByUserGroup($account->user->userGroup);
+        $currency  = $this->repository->getAccountCurrency($account) ?? app('amount')->getNativeCurrencyByUserGroup($account->user->userGroup);
 
         // get associated journal and transaction, if any:
         $journalId = $event->transaction_journal_id;
         $groupId   = null;
-        if (0 !== (int)$journalId) {
-            $groupId   = (int)$event->transactionJournal->transaction_group_id;
-            $journalId = (int)$journalId;
+        if (0 !== (int) $journalId) {
+            $groupId   = (int) $event->transactionJournal->transaction_group_id;
+            $journalId = (int) $journalId;
         }
 
         return [
-            'id'                      => (string)$event->id,
+            'id'                      => (string) $event->id,
             'created_at'              => $event->created_at->toAtomString(),
             'updated_at'              => $event->updated_at->toAtomString(),
             'amount'                  => app('steam')->bcround($event->amount, $currency->decimal_places),
-            'currency_id'             => (string)$currency->id,
+            'currency_id'             => (string) $currency->id,
             'currency_code'           => $currency->code,
             'currency_symbol'         => $currency->symbol,
             'currency_decimal_places' => $currency->decimal_places,
-            'transaction_journal_id'  => null !== $journalId ? (string)$journalId : null,
-            'transaction_group_id'    => null !== $groupId ? (string)$groupId : null,
+            'transaction_journal_id'  => null !== $journalId ? (string) $journalId : null,
+            'transaction_group_id'    => null !== $groupId ? (string) $groupId : null,
             'links'                   => [
                 [
                     'rel' => 'self',

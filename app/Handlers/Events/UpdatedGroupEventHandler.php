@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace FireflyIII\Handlers\Events;
 
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Enums\WebhookTrigger;
 use FireflyIII\Events\RequestedSendWebhookMessages;
 use FireflyIII\Events\UpdatedTransactionGroup;
@@ -30,7 +31,6 @@ use FireflyIII\Generator\Webhook\MessageGeneratorInterface;
 use FireflyIII\Models\Account;
 use FireflyIII\Models\Transaction;
 use FireflyIII\Models\TransactionJournal;
-use FireflyIII\Models\TransactionType;
 use FireflyIII\Repositories\RuleGroup\RuleGroupRepositoryInterface;
 use FireflyIII\Services\Internal\Support\CreditRecalculateService;
 use FireflyIII\TransactionRules\Engine\RuleEngineInterface;
@@ -41,10 +41,19 @@ use Illuminate\Support\Collection;
  */
 class UpdatedGroupEventHandler
 {
+    public function runAllHandlers(UpdatedTransactionGroup $event): void
+    {
+        $this->unifyAccounts($event);
+        $this->processRules($event);
+        $this->recalculateCredit($event);
+        $this->triggerWebhooks($event);
+
+    }
+
     /**
      * This method will check all the rules when a journal is updated.
      */
-    public function processRules(UpdatedTransactionGroup $updatedGroupEvent): void
+    private function processRules(UpdatedTransactionGroup $updatedGroupEvent): void
     {
         if (false === $updatedGroupEvent->applyRules) {
             app('log')->info(sprintf('Will not run rules on group #%d', $updatedGroupEvent->transactionGroup->id));
@@ -76,7 +85,7 @@ class UpdatedGroupEventHandler
         $newRuleEngine->fire();
     }
 
-    public function recalculateCredit(UpdatedTransactionGroup $event): void
+    private function recalculateCredit(UpdatedTransactionGroup $event): void
     {
         $group  = $event->transactionGroup;
 
@@ -86,7 +95,7 @@ class UpdatedGroupEventHandler
         $object->recalculate();
     }
 
-    public function triggerWebhooks(UpdatedTransactionGroup $updatedGroupEvent): void
+    private function triggerWebhooks(UpdatedTransactionGroup $updatedGroupEvent): void
     {
         app('log')->debug(__METHOD__);
         $group  = $updatedGroupEvent->transactionGroup;
@@ -142,13 +151,13 @@ class UpdatedGroupEventHandler
         $destAccount   = $first->transactions()->where('amount', '>', '0')->first()->account;
 
         $type          = $first->transactionType->type;
-        if (TransactionType::TRANSFER === $type || TransactionType::WITHDRAWAL === $type) {
+        if (TransactionTypeEnum::TRANSFER->value === $type || TransactionTypeEnum::WITHDRAWAL->value === $type) {
             // set all source transactions to source account:
             Transaction::whereIn('transaction_journal_id', $all)
                 ->where('amount', '<', 0)->update(['account_id' => $sourceAccount->id])
             ;
         }
-        if (TransactionType::TRANSFER === $type || TransactionType::DEPOSIT === $type) {
+        if (TransactionTypeEnum::TRANSFER->value === $type || TransactionTypeEnum::DEPOSIT->value === $type) {
             // set all destination transactions to destination account:
             Transaction::whereIn('transaction_journal_id', $all)
                 ->where('amount', '>', 0)->update(['account_id' => $destAccount->id])

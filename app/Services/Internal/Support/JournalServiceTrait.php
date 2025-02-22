@@ -1,4 +1,5 @@
 <?php
+
 /**
  * JournalServiceTrait.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -23,14 +24,14 @@ declare(strict_types=1);
 
 namespace FireflyIII\Services\Internal\Support;
 
+use FireflyIII\Enums\AccountTypeEnum;
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Factory\AccountMetaFactory;
 use FireflyIII\Factory\TagFactory;
 use FireflyIII\Models\Account;
-use FireflyIII\Models\AccountType;
 use FireflyIII\Models\Note;
 use FireflyIII\Models\TransactionJournal;
-use FireflyIII\Models\TransactionType;
 use FireflyIII\Repositories\Account\AccountRepositoryInterface;
 use FireflyIII\Repositories\Budget\BudgetRepositoryInterface;
 use FireflyIII\Repositories\Category\CategoryRepositoryInterface;
@@ -74,7 +75,7 @@ trait JournalServiceTrait
 
         // if $result (find by name) is NULL, but IBAN is set, any result of the search by NAME can't overrule
         // this account. In such a case, the name search must be retried with a new name.
-        if (null !== $nameResult && null === $numberResult && null === $ibanResult && '' !== (string)$data['iban'] && '' !== (string)$nameResult->iban) {
+        if (null !== $nameResult && null === $numberResult && null === $ibanResult && '' !== (string) $data['iban'] && '' !== (string) $nameResult->iban) {
             $data['name'] = sprintf('%s (%s)', $data['name'], $data['iban']);
             app('log')->debug(sprintf('Search again using the new name, "%s".', $data['name']));
             $result       = $this->findAccountByName(null, $data, $expectedTypes[$transactionType]);
@@ -114,7 +115,7 @@ trait JournalServiceTrait
     {
         // first attempt, find by ID.
         if (null !== $data['id']) {
-            $search = $this->accountRepository->find((int)$data['id']);
+            $search = $this->accountRepository->find((int) $data['id']);
             if (null !== $search && in_array($search->accountType->type, $types, true)) {
                 app('log')->debug(
                     sprintf('Found "account_id" object: #%d, "%s" of type %s (1)', $search->id, $search->name, $search->accountType->type)
@@ -175,10 +176,10 @@ trait JournalServiceTrait
             return null;
         }
         // find by preferred type.
-        $source = $this->accountRepository->findByAccountNumber((string)$data['number'], [$types[0]]);
+        $source = $this->accountRepository->findByAccountNumber((string) $data['number'], [$types[0]]);
 
         // or any expected type.
-        $source ??= $this->accountRepository->findByAccountNumber((string)$data['number'], $types);
+        $source ??= $this->accountRepository->findByAccountNumber((string) $data['number'], $types);
 
         if (null !== $source) {
             app('log')->debug(sprintf('Found account: #%d, %s', $source->id, $source->name));
@@ -256,21 +257,21 @@ trait JournalServiceTrait
         }
         if (null === $account) {
             // final attempt, create it.
-            if (AccountType::ASSET === $preferredType) {
+            if (AccountTypeEnum::ASSET->value === $preferredType) {
                 throw new FireflyException(sprintf('TransactionFactory: Cannot create asset account with these values: %s', json_encode($data)));
             }
             // fix name of account if only IBAN is given:
-            if ('' === (string)$data['name'] && '' !== (string)$data['iban']) {
+            if ('' === (string) $data['name'] && '' !== (string) $data['iban']) {
                 app('log')->debug(sprintf('Account name is now IBAN ("%s")', $data['iban']));
                 $data['name'] = $data['iban'];
             }
             // fix name of account if only number is given:
-            if ('' === (string)$data['name'] && '' !== (string)$data['number']) {
+            if ('' === (string) $data['name'] && '' !== (string) $data['number']) {
                 app('log')->debug(sprintf('Account name is now account number ("%s")', $data['number']));
                 $data['name'] = $data['number'];
             }
             // if name is still NULL, return NULL.
-            if ('' === (string)$data['name']) {
+            if ('' === (string) $data['name']) {
                 app('log')->debug('Account name is still NULL, return NULL.');
 
                 return null;
@@ -309,8 +310,8 @@ trait JournalServiceTrait
     private function getCashAccount(?Account $account, array $data, array $types): ?Account
     {
         // return cash account.
-        if (null === $account && '' === (string)$data['name']
-            && in_array(AccountType::CASH, $types, true)) {
+        if (null === $account && '' === (string) $data['name']
+            && in_array(AccountTypeEnum::CASH->value, $types, true)) {
             $account = $this->accountRepository->getCashAccount();
         }
         app('log')->debug('Cannot return cash account, return input instead.');
@@ -358,7 +359,7 @@ trait JournalServiceTrait
 
     protected function storeBudget(TransactionJournal $journal, NullArrayObject $data): void
     {
-        if (TransactionType::WITHDRAWAL !== $journal->transactionType->type) {
+        if (TransactionTypeEnum::WITHDRAWAL->value !== $journal->transactionType->type) {
             $journal->budgets()->sync([]);
 
             return;
@@ -389,7 +390,7 @@ trait JournalServiceTrait
 
     protected function storeNotes(TransactionJournal $journal, ?string $notes): void
     {
-        $notes = (string)$notes;
+        $notes = (string) $notes;
         $note  = $journal->notes()->first();
         if ('' !== $notes) {
             if (null === $note) {
@@ -421,7 +422,7 @@ trait JournalServiceTrait
         }
         app('log')->debug('Start of loop.');
         foreach ($tags as $string) {
-            $string = (string)$string;
+            $string = (string) $string;
             app('log')->debug(sprintf('Now at tag "%s"', $string));
             if ('' !== $string) {
                 $tag = $this->tagFactory->findOrCreate($string);

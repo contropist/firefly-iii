@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AccountServiceTrait.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -24,13 +25,13 @@ declare(strict_types=1);
 namespace FireflyIII\Services\Internal\Support;
 
 use Carbon\Carbon;
+use FireflyIII\Enums\AccountTypeEnum;
 use FireflyIII\Exceptions\DuplicateTransactionException;
 use FireflyIII\Exceptions\FireflyException;
 use FireflyIII\Factory\AccountMetaFactory;
 use FireflyIII\Factory\TransactionCurrencyFactory;
 use FireflyIII\Factory\TransactionGroupFactory;
 use FireflyIII\Models\Account;
-use FireflyIII\Models\AccountType;
 use FireflyIII\Models\Note;
 use FireflyIII\Models\Transaction;
 use FireflyIII\Models\TransactionCurrency;
@@ -88,14 +89,14 @@ trait AccountServiceTrait
     /**
      * Update metadata for account. Depends on type which fields are valid.
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings("PHPMD.NPathComplexity")
      *
      * TODO this method treats expense accounts and liabilities the same way (tries to save interest)
      */
     public function updateMetaData(Account $account, array $data): void
     {
         $fields  = $this->validFields;
-        if (AccountType::ASSET === $account->accountType->type) {
+        if (AccountTypeEnum::ASSET->value === $account->accountType->type) {
             $fields = $this->validAssetFields;
         }
 
@@ -118,11 +119,11 @@ trait AccountServiceTrait
         }
 
         // only asset account may have a role:
-        if (AccountType::ASSET !== $account->accountType->type) {
+        if (AccountTypeEnum::ASSET->value !== $account->accountType->type) {
             $data['account_role'] = '';
         }
 
-        if (AccountType::ASSET === $account->accountType->type && 'ccAsset' === $data['account_role']) {
+        if (AccountTypeEnum::ASSET->value === $account->accountType->type && 'ccAsset' === $data['account_role']) {
             $fields = $this->validCCFields;
         }
 
@@ -143,7 +144,7 @@ trait AccountServiceTrait
                     $data[$field] = $data[$field]->toAtomString();
                 }
 
-                $factory->crud($account, $field, (string)$data[$field]);
+                $factory->crud($account, $field, (string) $data[$field]);
             }
         }
     }
@@ -173,7 +174,7 @@ trait AccountServiceTrait
      */
     public function validOBData(array $data): bool
     {
-        $data['opening_balance'] = (string)($data['opening_balance'] ?? '');
+        $data['opening_balance'] = (string) ($data['opening_balance'] ?? '');
         if ('' !== $data['opening_balance'] && 0 === bccomp($data['opening_balance'], '0')) {
             $data['opening_balance'] = '';
         }
@@ -200,7 +201,7 @@ trait AccountServiceTrait
         if (is_array($language)) {
             $language = 'en_US';
         }
-        $language   = (string)$language;
+        $language   = (string) $language;
         $sourceId   = null;
         $sourceName = null;
         $destId     = null;
@@ -232,13 +233,14 @@ trait AccountServiceTrait
         // get or grab currency:
         $currency   = $this->accountRepository->getAccountCurrency($account);
         if (null === $currency) {
-            $currency = app('amount')->getDefaultCurrencyByUserGroup($account->user->userGroup);
+            $currency = app('amount')->getNativeCurrencyByUserGroup($account->user->userGroup);
         }
 
         // submit to factory:
         $submission = [
             'group_title'  => null,
-            'user'         => $account->user_id,
+            'user'         => $account->user,
+            'user_group'   => $account->user->userGroup,
             'transactions' => [
                 [
                     'type'             => 'Opening balance',
@@ -247,7 +249,8 @@ trait AccountServiceTrait
                     'source_name'      => $sourceName,
                     'destination_id'   => $destId,
                     'destination_name' => $destName,
-                    'user'             => $account->user_id,
+                    'user'             => $account->user,
+                    'user_group'       => $account->user->userGroup,
                     'currency_id'      => $currency->id,
                     'order'            => 0,
                     'amount'           => $amount,
@@ -350,7 +353,7 @@ trait AccountServiceTrait
 
         if (null === $currency) {
             // use default currency:
-            $currency = app('amount')->getDefaultCurrencyByUserGroup($this->user->userGroup);
+            $currency = app('amount')->getNativeCurrencyByUserGroup($this->user->userGroup);
         }
         $currency->enabled = true;
         $currency->save();
@@ -390,7 +393,7 @@ trait AccountServiceTrait
         // if exists, update:
         $currency                                    = $this->accountRepository->getAccountCurrency($account);
         if (null === $currency) {
-            $currency = app('amount')->getDefaultCurrencyByUserGroup($account->user->userGroup);
+            $currency = app('amount')->getNativeCurrencyByUserGroup($account->user->userGroup);
         }
 
         // simply grab the first journal and change it:
@@ -433,7 +436,7 @@ trait AccountServiceTrait
         if (is_array($language)) {
             $language = 'en_US';
         }
-        $language   = (string)$language;
+        $language   = (string) $language;
 
         // set source and/or destination based on whether the amount is positive or negative.
         // first, assume the amount is positive and go from there:
@@ -456,13 +459,13 @@ trait AccountServiceTrait
         // get or grab currency:
         $currency   = $this->accountRepository->getAccountCurrency($account);
         if (null === $currency) {
-            $currency = app('amount')->getDefaultCurrencyByUserGroup($account->user->userGroup);
+            $currency = app('amount')->getNativeCurrencyByUserGroup($account->user->userGroup);
         }
-
         // submit to factory:
         $submission = [
             'group_title'  => null,
-            'user'         => $account->user_id,
+            'user'         => $account->user,
+            'user_group'   => $account->user->userGroup,
             'transactions' => [
                 [
                     'type'             => 'Liability credit',
@@ -471,7 +474,8 @@ trait AccountServiceTrait
                     'source_name'      => $sourceName,
                     'destination_id'   => $destId,
                     'destination_name' => $destName,
-                    'user'             => $account->user_id,
+                    'user'             => $account->user,
+                    'user_group'       => $account->user->userGroup,
                     'currency_id'      => $currency->id,
                     'order'            => 0,
                     'amount'           => $amount,
@@ -572,7 +576,7 @@ trait AccountServiceTrait
         // if exists, update:
         $currency           = $this->accountRepository->getAccountCurrency($account);
         if (null === $currency) {
-            $currency = app('amount')->getDefaultCurrencyByUserGroup($account->user->userGroup);
+            $currency = app('amount')->getNativeCurrencyByUserGroup($account->user->userGroup);
         }
 
         // simply grab the first journal and change it:
@@ -622,7 +626,7 @@ trait AccountServiceTrait
         if (is_array($language)) {
             $language = 'en_US';
         }
-        $language   = (string)$language;
+        $language   = (string) $language;
         $sourceId   = null;
         $sourceName = null;
         $destId     = null;
@@ -653,14 +657,15 @@ trait AccountServiceTrait
         // get or grab currency:
         $currency   = $this->accountRepository->getAccountCurrency($account);
         if (null === $currency) {
-            $currency = app('amount')->getDefaultCurrencyByUserGroup($account->user->userGroup);
+            $currency = app('amount')->getNativeCurrencyByUserGroup($account->user->userGroup);
         }
 
         // submit to factory:
         $submission = [
-            'group_title'  => null,
-            'user'         => $account->user_id,
-            'transactions' => [
+            'group_title'   => null,
+            'user'          => $account->user,
+            'user_group'    => $account->user->userGroup,
+            'transactions'  => [
                 [
                     'type'             => 'Opening balance',
                     'date'             => $openingBalanceDate,
@@ -668,7 +673,8 @@ trait AccountServiceTrait
                     'source_name'      => $sourceName,
                     'destination_id'   => $destId,
                     'destination_name' => $destName,
-                    'user'             => $account->user_id,
+                    'user'             => $account->user,
+                    'user_group'       => $account->user->userGroup,
                     'currency_id'      => $currency->id,
                     'order'            => 0,
                     'amount'           => $amount,

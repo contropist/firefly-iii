@@ -25,9 +25,11 @@ namespace FireflyIII\Repositories\PiggyBank;
 
 use Carbon\Carbon;
 use FireflyIII\Exceptions\FireflyException;
+use FireflyIII\Models\Account;
 use FireflyIII\Models\PiggyBank;
 use FireflyIII\Models\PiggyBankRepetition;
 use FireflyIII\Models\TransactionJournal;
+use FireflyIII\Models\UserGroup;
 use FireflyIII\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
@@ -37,13 +39,15 @@ use Illuminate\Support\Collection;
  */
 interface PiggyBankRepositoryInterface
 {
-    public function addAmount(PiggyBank $piggyBank, string $amount, ?TransactionJournal $journal = null): bool;
+    public function addAmount(PiggyBank $piggyBank, Account $account, string $amount, ?TransactionJournal $journal = null): bool;
 
-    public function addAmountToRepetition(PiggyBankRepetition $repetition, string $amount, TransactionJournal $journal): void;
+    public function getCurrentNativeAmount(PiggyBank $piggyBank, ?Account $account = null): string;
 
-    public function canAddAmount(PiggyBank $piggyBank, string $amount): bool;
+    public function addAmountToPiggyBank(PiggyBank $piggyBank, string $amount, TransactionJournal $journal): void;
 
-    public function canRemoveAmount(PiggyBank $piggyBank, string $amount): bool;
+    public function canAddAmount(PiggyBank $piggyBank, Account $account, string $amount): bool;
+
+    public function canRemoveAmount(PiggyBank $piggyBank, Account $account, string $amount): bool;
 
     /**
      * Destroy piggy bank.
@@ -66,22 +70,20 @@ interface PiggyBankRepositoryInterface
     /**
      * Get current amount saved in piggy bank.
      */
-    public function getCurrentAmount(PiggyBank $piggyBank): string;
+    public function getCurrentAmount(PiggyBank $piggyBank, ?Account $account = null): string;
 
     /**
      * Get all events.
      */
     public function getEvents(PiggyBank $piggyBank): Collection;
+    /**
+     * Get current amount saved in piggy bank.
+     */
 
     /**
      * Used for connecting to a piggy bank.
      */
-    public function getExactAmount(PiggyBank $piggyBank, PiggyBankRepetition $repetition, TransactionJournal $journal): string;
-
-    /**
-     * Highest order of all piggy banks.
-     */
-    public function getMaxOrder(): int;
+    public function getExactAmount(PiggyBank $piggyBank, TransactionJournal $journal): string;
 
     /**
      * Return note for piggy bank.
@@ -98,7 +100,7 @@ interface PiggyBankRepositoryInterface
      */
     public function getPiggyBanksWithAmount(): Collection;
 
-    public function getRepetition(PiggyBank $piggyBank): ?PiggyBankRepetition;
+    public function getRepetition(PiggyBank $piggyBank, bool $overrule = false): ?PiggyBankRepetition;
 
     /**
      * Returns the suggested amount the user should save per month, or "".
@@ -108,15 +110,16 @@ interface PiggyBankRepositoryInterface
     /**
      * Get for piggy account what is left to put in piggies.
      */
-    public function leftOnAccount(PiggyBank $piggyBank, Carbon $date): string;
+    public function leftOnAccount(PiggyBank $piggyBank, Account $account, Carbon $date): string;
 
-    public function removeAmount(PiggyBank $piggyBank, string $amount, ?TransactionJournal $journal = null): bool;
+    public function purgeAll(): void;
+
+    public function removeAmount(PiggyBank $piggyBank, Account $account, string $amount, ?TransactionJournal $journal = null): bool;
+
+    public function removeAmountFromAll(PiggyBank $piggyBank, string $amount): void;
 
     public function removeObjectGroup(PiggyBank $piggyBank): PiggyBank;
 
-    /**
-     * Correct order of piggies in case of issues.
-     */
     public function resetOrder(): void;
 
     /**
@@ -135,6 +138,8 @@ interface PiggyBankRepositoryInterface
 
     public function setUser(null|Authenticatable|User $user): void;
 
+    public function setUserGroup(UserGroup $userGroup): void;
+
     /**
      * Store new piggy bank.
      *
@@ -146,4 +151,6 @@ interface PiggyBankRepositoryInterface
      * Update existing piggy bank.
      */
     public function update(PiggyBank $piggyBank, array $data): PiggyBank;
+
+    public function updateNote(PiggyBank $piggyBank, string $note): void;
 }

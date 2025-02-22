@@ -45,11 +45,7 @@ class SumController extends Controller
         $this->middleware(
             function ($request, $next) {
                 $this->repository = app(BillRepositoryInterface::class);
-
-                $userGroup        = $this->validateUserGroup($request);
-                if (null !== $userGroup) {
-                    $this->repository->setUserGroup($userGroup);
-                }
+                $this->repository->setUserGroup($this->validateUserGroup($request));
 
                 return $next($request);
             }
@@ -62,7 +58,7 @@ class SumController extends Controller
      *
      * TODO see autocomplete/accountcontroller for list.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function paid(DateRequest $request): JsonResponse
     {
@@ -78,7 +74,7 @@ class SumController extends Controller
      *
      * TODO see autocomplete/accountcontroller for list.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings("PHPMD.UnusedFormalParameter")
      */
     public function unpaid(DateRequest $request): JsonResponse
     {

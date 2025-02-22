@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BillTransformer.php
  * Copyright (c) 2019 james@firefly-iii.org
@@ -52,10 +53,11 @@ class BillTransformer extends AbstractTransformer
     /**
      * @throws FireflyException
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings("PHPMD.ExcessiveMethodLength")
      */
     public function collectMetaData(Collection $objects): Collection
     {
+        /** @var array<int, TransactionCurrency> $currencies */
         $currencies       = [];
         $bills            = [];
         $this->notes      = [];
@@ -85,8 +87,8 @@ class BillTransformer extends AbstractTransformer
 
         /** @var ObjectGroup $entry */
         foreach ($set as $entry) {
-            $billId                = (int)$entry->object_groupable_id;
-            $id                    = (int)$entry->object_group_id;
+            $billId                = (int) $entry->object_groupable_id;
+            $id                    = (int) $entry->object_group_id;
             $order                 = $entry->order;
             $this->groups[$billId] = [
                 'object_group_id'    => $id,
@@ -95,7 +97,7 @@ class BillTransformer extends AbstractTransformer
             ];
         }
         Log::debug(sprintf('Created new ExchangeRateConverter in %s', __METHOD__));
-        $this->default    = app('amount')->getDefaultCurrency();
+        $this->default    = app('amount')->getNativeCurrency();
         $this->converter  = new ExchangeRateConverter();
 
         // grab all paid dates:
@@ -124,8 +126,8 @@ class BillTransformer extends AbstractTransformer
             foreach ($journals as $journal) {
                 app('log')->debug(sprintf('Processing journal #%d', $journal->id));
                 $transaction                = $transactions[$journal->id] ?? [];
-                $billId                     = (int)$journal->bill_id;
-                $currencyId                 = (int)($transaction['transaction_currency_id'] ?? 0);
+                $billId                     = (int) $journal->bill_id;
+                $currencyId                 = (int) ($transaction['transaction_currency_id'] ?? 0);
                 $currencies[$currencyId] ??= TransactionCurrency::find($currencyId);
 
                 // foreign currency
@@ -137,27 +139,27 @@ class BillTransformer extends AbstractTransformer
                 app('log')->debug('Foreign currency is NULL');
                 if (null !== $transaction['foreign_currency_id']) {
                     app('log')->debug(sprintf('Foreign currency is #%d', $transaction['foreign_currency_id']));
-                    $foreignCurrencyId     = (int)$transaction['foreign_currency_id'];
+                    $foreignCurrencyId     = (int) $transaction['foreign_currency_id'];
                     $currencies[$foreignCurrencyId] ??= TransactionCurrency::find($foreignCurrencyId);
-                    $foreignCurrencyCode   = $currencies[$foreignCurrencyId]->code;
-                    $foreignCurrencyName   = $currencies[$foreignCurrencyId]->name;
-                    $foreignCurrencySymbol = $currencies[$foreignCurrencyId]->symbol;
-                    $foreignCurrencyDp     = $currencies[$foreignCurrencyId]->decimal_places;
+                    $foreignCurrencyCode   = $currencies[$foreignCurrencyId]->code; // @phpstan-ignore property.notFound
+                    $foreignCurrencyName   = $currencies[$foreignCurrencyId]->name; // @phpstan-ignore property.notFound
+                    $foreignCurrencySymbol = $currencies[$foreignCurrencyId]->symbol; // @phpstan-ignore property.notFound
+                    $foreignCurrencyDp     = $currencies[$foreignCurrencyId]->decimal_places; // @phpstan-ignore property.notFound
                 }
 
                 $this->paidDates[$billId][] = [
-                    'transaction_group_id'            => (string)$journal->id,
-                    'transaction_journal_id'          => (string)$journal->transaction_group_id,
+                    'transaction_group_id'            => (string) $journal->id,
+                    'transaction_journal_id'          => (string) $journal->transaction_group_id,
                     'date'                            => $journal->date->toAtomString(),
-                    'currency_id'                     => $currencies[$currencyId]->id,
-                    'currency_code'                   => $currencies[$currencyId]->code,
-                    'currency_name'                   => $currencies[$currencyId]->name,
-                    'currency_symbol'                 => $currencies[$currencyId]->symbol,
-                    'currency_decimal_places'         => $currencies[$currencyId]->decimal_places,
-                    'native_currency_id'              => $currencies[$currencyId]->id,
-                    'native_currency_code'            => $currencies[$currencyId]->code,
-                    'native_currency_symbol'          => $currencies[$currencyId]->symbol,
-                    'native_currency_decimal_places'  => $currencies[$currencyId]->decimal_places,
+                    'currency_id'                     => $currencies[$currencyId]->id, // @phpstan-ignore property.notFound
+                    'currency_code'                   => $currencies[$currencyId]->code, // @phpstan-ignore property.notFound
+                    'currency_name'                   => $currencies[$currencyId]->name, // @phpstan-ignore property.notFound
+                    'currency_symbol'                 => $currencies[$currencyId]->symbol, // @phpstan-ignore property.notFound
+                    'currency_decimal_places'         => $currencies[$currencyId]->decimal_places, // @phpstan-ignore property.notFound
+                    'native_currency_id'              => $currencies[$currencyId]->id, // @phpstan-ignore property.notFound
+                    'native_currency_code'            => $currencies[$currencyId]->code, // @phpstan-ignore property.notFound
+                    'native_currency_symbol'          => $currencies[$currencyId]->symbol, // @phpstan-ignore property.notFound
+                    'native_currency_decimal_places'  => $currencies[$currencyId]->decimal_places, // @phpstan-ignore property.notFound
                     'foreign_currency_id'             => $foreignCurrencyId,
                     'foreign_currency_code'           => $foreignCurrencyCode,
                     'foreign_currency_name'           => $foreignCurrencyName,
@@ -165,13 +167,8 @@ class BillTransformer extends AbstractTransformer
                     'foreign_currency_decimal_places' => $foreignCurrencyDp,
                     'amount'                          => $transaction['amount'],
                     'foreign_amount'                  => $transaction['foreign_amount'],
-                    'native_amount'                   => $this->converter->convert($currencies[$currencyId], $this->default, $journal->date, $transaction['amount']),
-                    'foreign_native_amount'           => '' === (string)$transaction['foreign_amount'] ? null : $this->converter->convert(
-                        $currencies[$foreignCurrencyId],
-                        $this->default,
-                        $journal->date,
-                        $transaction['foreign_amount']
-                    ),
+                    'native_amount'                   => null,
+                    'foreign_native_amount'           => null,
                 ];
             }
         }
@@ -209,7 +206,7 @@ class BillTransformer extends AbstractTransformer
             'amount_max'                     => app('steam')->bcround($bill->amount_max, $currency->decimal_places),
             'native_amount_min'              => $this->converter->convert($currency, $this->default, $date, $bill->amount_min),
             'native_amount_max'              => $this->converter->convert($currency, $this->default, $date, $bill->amount_max),
-            'currency_id'                    => (string)$bill->transaction_currency_id,
+            'currency_id'                    => (string) $bill->transaction_currency_id,
             'currency_code'                  => $currency->code,
             'currency_name'                  => $currency->name,
             'currency_symbol'                => $currency->symbol,
@@ -325,7 +322,7 @@ class BillTransformer extends AbstractTransformer
                 break;
             }
         }
-        $simple       = $set->map(
+        $simple       = $set->map( // @phpstan-ignore-line
             static function (Carbon $date) {
                 return $date->toAtomString();
             }

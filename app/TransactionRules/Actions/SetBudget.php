@@ -23,11 +23,11 @@ declare(strict_types=1);
 
 namespace FireflyIII\TransactionRules\Actions;
 
+use FireflyIII\Enums\TransactionTypeEnum;
 use FireflyIII\Events\Model\Rule\RuleActionFailedOnArray;
 use FireflyIII\Events\TriggeredAuditLog;
 use FireflyIII\Models\RuleAction;
 use FireflyIII\Models\TransactionJournal;
-use FireflyIII\Models\TransactionType;
 use FireflyIII\User;
 
 /**
@@ -65,7 +65,7 @@ class SetBudget implements ActionInterface
             return false;
         }
 
-        if (TransactionType::WITHDRAWAL !== $journal['transaction_type_type']) {
+        if (TransactionTypeEnum::WITHDRAWAL->value !== $journal['transaction_type_type']) {
             app('log')->debug(
                 sprintf(
                     'RuleAction SetBudget could not set budget of journal #%d to "%s" because journal is a %s.',
@@ -84,7 +84,7 @@ class SetBudget implements ActionInterface
         $object        = $user->transactionJournals()->find($journal['transaction_journal_id']);
         $oldBudget     = $object->budgets()->first();
         $oldBudgetName = $oldBudget?->name;
-        if ((int)$oldBudget?->id === $budget->id) {
+        if ((int) $oldBudget?->id === $budget->id) {
             event(new RuleActionFailedOnArray($this->action, $journal, trans('rules.already_linked_to_budget', ['name' => $budget->name])));
 
             return false;
